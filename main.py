@@ -1,11 +1,12 @@
 import base64
 import json
-import matplotlib.pyplot as plt
-import numpy as np
-from openai import OpenAI
 from pathlib import Path
 import io
+
+import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import numpy as np
+from openai import OpenAI
 
 NUM_BEAMS = 3
 ARC_COLORS = [
@@ -24,30 +25,44 @@ ARC_COLORS = [
 arc_cmap = ListedColormap(ARC_COLORS)
 
 
-def solve(task_number):
-    task = read(task_number)
-    conversation = [{"role": "user", "content": [{
-        "type": "text",
-        "text": "The first image is the input and the second image is the output. what is the relation ship between these two images"
+def solve_one(task_number, interactive=True):
+    task = read_task(task_number)
+    conversation = [{'role': 'user', 'content': [{
+        'type': 'text',
+        'text': 'The first image is the input and the second image is the output. what is the relation ship between these two images'
     }]}]
 
+    last_image_index = 0
     while True:
-        next_instruction = input("What should I do next? (1- text, 2- send images i 3- quit) ")
+        if interactive:
+            next_instruction = input('What should I do next? (1 <text> (send free text), 2 (sends next image), 3 (quit)) ')
+        else:
+            # if last_image_index < len(task['train']):
+            if last_image_index == 0:
+                next_instruction = '2'
+            else:
+                next_instruction = '3'
+
         if next_instruction[0] == '3':
             break
 
         if next_instruction[0] == '1':
             conversation.append(
-                {"role": "user", "content": [{
-                    "type": "text",
-                    "text": next_instruction[2:]
+                {'role': 'user', 'content': [{
+                    'type': 'text',
+                    'text': next_instruction[1:].strip()
                 }]}
                 )
-            conversation = make_chatgpt_query(conversation)
         elif next_instruction[0] == '2':
-            conversation = add_images_to_conversation(conversation, task['train'][0]['input'], task['train'][0]['output'])
-            conversation = make_chatgpt_query(conversation)
-
+            if last_image_index == len(task['train']):
+                print('No more image to send')
+                continue
+            conversation = add_images_to_conversation(conversation,
+                task['train'][last_image_index]['input'],
+                task['train'][last_image_index]['output'])
+            last_image_index += 1
+        
+        conversation = make_chatgpt_query(conversation)
         print(f"{conversation[-1]['content'][0]['text']}")
 
 
@@ -55,20 +70,20 @@ client = OpenAI()
 
 def add_images_to_conversation(conversation, input_grid, output_grid):
     input_img = make_image_base64(input_grid)
-    plt.savefig("im1.jpg", format='jpg')
+    plt.savefig('im1.jpg', format='jpg')
     output_image = make_image_base64(output_grid)
-    plt.savefig("im2.jpg", format='jpg')
+    plt.savefig('im2.jpg', format='jpg')
     conversation.append(
-        {"role": "user", "content":[{
-            "type": "image_url",
-            "image_url": {
-                "url": f"data:image/jpeg;base64,{input_img}"
+        {'role': 'user', 'content':[{
+            'type': 'image_url',
+            'image_url': {
+                'url': f'data:image/jpeg;base64,{input_img}'
             }
         },
         {
-            "type": "image_url",
-            "image_url": {
-                "url": f"data:image/jpeg;base64,{output_image}"
+            'type': 'image_url',
+            'image_url': {
+                'url': f'data:image/jpeg;base64,{output_image}'
             }
         }]}
     )
@@ -76,12 +91,12 @@ def add_images_to_conversation(conversation, input_grid, output_grid):
 
 def make_chatgpt_query(conversation):
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model='gpt-4o',
         messages=conversation
     )
-    conversation.append( {"role": "assistant", "content": [{
-                    "type": "text",
-                    "text": completion.choices[0].message.content
+    conversation.append( {'role': 'assistant', 'content': [{
+                    'type': 'text',
+                    'text': completion.choices[0].message.content
                 }]})
     return conversation
 
@@ -95,21 +110,20 @@ def make_image_base64(input_grid):
     return my_base64_jpgData
 
 
-def read(task_number):
-    with open(f"data/training/{task_number}") as f:
+def read_task(task_number):
+    with open(f'data/training/{task_number}') as f:
         return json.load(f)
 
 
-def big_solve(task_number):
+def solve_all(task_number, interactive=True):
     for i in range(NUM_BEAMS):
-        solve(task_number)
+        solve_one(task_number, interactive=interactive)
 
 
-def main():
+def main(interactive):
     for task_number in Path('test').iterdir():
-        big_solve(task_number)
+        solve_all(task_number, interactive=interactive)
 
-
-if __name__ == "__main__":
-    solve("f8b3ba0a.json")
+if __name__ == '__main__':
+    solve_one('f8b3ba0a.json', interactive=False)
     # main()
