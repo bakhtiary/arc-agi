@@ -1,3 +1,5 @@
 matplotlib
 numpy
 openai
+litellm
+tenacity

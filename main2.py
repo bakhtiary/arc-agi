@@ -1,0 +1,252 @@
+# Todo:
+#   Test
+#   Add A critic/summarizer LLM
+#   Add tools (like shape counts, etc), sp. based on another LLMs recommendation (similar to RAG)
+
+import base64
+import io
+import json
+import sys
+import traceback
+import re
+from pathlib import Path
+from datetime import datetime
+from typing import Counter
+
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import litellm
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+
+DATA_DIR = Path('data')
+LOG_DIR = Path('log') / datetime.now().strftime('%Y%m%d-%H%M%S')
+
+NUM_BEAMS=100
+MAX_ATTEMPTS = 5
+LLM_NUM_RETRIES = 2
+#LLM_MODEL='gpt-3.5-turbo'
+LLM_MODEL='gpt-4o'
+
+ARC_COLORS = [
+    '#000',
+    '#0074D9',  # /* blue */
+    '#FF4136',  # /* red */
+    '#2ECC40',  # /* green */
+    '#FFDC00',  # /* yellow */
+    '#AAAAAA',  # /* grey */
+    '#F012BE',  # /* fuschia */
+    '#FF851B',  # /* orange */
+    '#7FDBFF',  # /* teal */
+    '#870C25',  # /* brown */
+]
+arc_cmap = ListedColormap(ARC_COLORS)
+
+# Define the exceptions that should trigger a retry
+retry_exceptions = (
+    Exception,  # Replace with specific exceptions if litellm defines any
+)
+def add_content_to_messages(messages, role, content):
+    assert isinstance(content, list) or isinstance(content, str)
+    if isinstance(content, str):
+        content_str = content
+        content = []
+        add_text_to_content(content, content_str)
+
+    messages.append({
+        'role': role,
+        'content': content    
+    })
+    
+def make_image_base64(input_grid):
+    plt.imshow(input_grid, cmap=arc_cmap, vmin=0, vmax=10)
+    my_stringIObytes = io.BytesIO()
+    plt.savefig(my_stringIObytes, format='jpg')
+    my_stringIObytes.seek(0)
+    my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
+    return my_base64_jpgData
+
+def add_image_to_content(content, grid):
+    base64_img = make_image_base64(grid)
+    content.append({
+        'type': 'image_url',
+        'image_url': {
+            'url': f'data:image/jpeg;base64,{base64_img}'
+        }
+    })
+
+def add_text_to_content(content, text):
+    base64_img = make_image_base64(grid)
+    content.append({
+        'type': 'text',
+        'text': text
+    })
+
+
+@retry(
+    retry=retry_if_exception_type(retry_exceptions),
+    stop=stop_after_attempt(LLM_NUM_RETRIES),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
+    reraise=True
+)
+def chat_with_llm(messages):
+    response = litellm.chat_completion(
+        messages=messages,
+        stream=False,
+        model=LLM_MODEL,
+        max_tokens=5000,
+        temperature=0,
+    )
+    assistant_reply = response['content'].strip()
+    add_content_to_messages(messages, 'assistant', assistant_reply)
+    return assistant_reply
+
+def extract_code(assistant_reply):
+    code_blocks = re.findall(r'```(?:python)?\n(.*?)```', assistant_reply, re.DOTALL)
+    if code_blocks:
+        code = '\n'.join(code_blocks)
+        return code
+    else:
+        return None
+
+
+def analyze_problem(messages, task):
+    content = []
+    add_text_to_content(content, ('Can you analyze the following pair of images and find the'
+        'input/output relationship them? (the first is the input and the second is the output)'))
+    add_image_to_content(content, task['train'][0]['input'])
+    add_image_to_content(content, task['train'][0]['output'])
+    
+    return chat_with_llm(messages)
+
+
+def generate_initial_code(messages, task):
+    content = []
+    add_text_to_content(content, ('Good. Now write a Python function named `solve` that trasnfers the input as a grid to the output as a grid.'
+            f'\nGrids are represented as Python list of lists. For instance, the input and ouput grids for the first pair of images are: '
+            f'\n\nInput: ' + str(task['train'][0]['input']) +
+            f'\n\nOutput: ' + str(task['train'][0]['output']) +
+            f'\n\nPlease enclose code in triple backticks as usual.'
+            # TODO: One shot example
+    ))
+    add_content_to_messages(messages, 'user', content)
+    assistant_reply = chat_with_llm(messages)
+    return assistant_reply
+
+def insist_get_code(messages, assistant_reply, num_attempts=MAX_ATTEMPTS):
+    for attempt_i in range(num_attempts):
+        # pop the last message(bad code block)
+        # messages.pop()
+        code = extract_code(assistant_reply)
+        if code is not None:
+            return code
+        assistant_reply = send_short_message(messages, 'Please provide the code enclosed in triple backticks.')
+        
+    return None
+
+def send_short_message(messages, text):
+    add_content_to_messages(messages, 'user', text)
+    assistant_reply = chat_with_llm(messages)
+    return assistant_reply
+
+def verify_code(code, task):
+    err_content = []
+    try:
+        local_namespace = {}
+        exec(code, {}, local_namespace)
+    except Exception:
+        error_msg = traceback.format_exc()
+        add_text_to_content(err_content, (f'The following error happened when evaluating your function `solve`:'
+            f'\n{error_msg}\n'
+            'Please write a corrected code enclosed in triple backticks.')                                 
+        )
+        return err_content, None
+    
+    if 'solve' not in local_namespace:
+        add_text_to_content(err_content, ('Function `solve` is not defined.'
+            'Please try again and make sure the code is enclosed in triple backticks.'))
+        return err_content, None
+    else:
+        solve_fp = local_namespace['solve']
+        for pair in task['train']:
+            input_grid, output_grid = pair['input'], pair['output']
+            try:
+                pred_grid = solve_fp(input_grid)
+            except Exception:
+                error_msg = traceback.format_exc()
+                add_text_to_content(err_content, (f'The following error happened when calling your function `solve`:'
+                    f'\n{error_msg}\n'
+                    f'The input was: {str(input_grid)}'
+                    'Please write a corrected code enclosed in triple backticks.')                                 
+                )
+                return err_content, None
+            
+            if output_grid != pred_grid:
+                add_text_to_content(err_content, f'Wrong output for input: `{str(input_grid)}`')
+                add_image_to_content(err_content, input_grid)
+                add_text_to_content(err_content, f'Expected output: `{str(output_grid)}`')
+                add_image_to_content(err_content, output_grid)
+                add_text_to_content(err_content, f'Output generated by your code: `{str(pred_grid)}`')
+                add_image_to_content(err_content, pred_grid)
+                add_text_to_content(err_content, 'Please take your time to think about the problem and then write a corrected code enclosed in triple backticks.')
+                return err_content, None
+        
+        pred_grid_for_test = local_namespace['solve'](task['test']['input'])
+        return None, pred_grid_for_test
+    
+
+def read_task(task_id, dataset):
+    json_text = (DATA_DIR / dataset / f'{task_id}.json').read_text()
+    return json.loads(json_text)
+
+def solve(task_id, dataset):
+    task = read_task(task_id, dataset)
+
+    messages = []
+    add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')
+        
+    analysis = analyze_problem(messages, task)
+    
+    assistant_reply = generate_initial_code(messages, task)
+    code = insist_get_code(messages, assistant_reply)
+    if code is None:
+        return None
+    
+    for attempt_i in range(MAX_ATTEMPTS):
+        err_content, result = verify_code(code, task)
+        if err_content:
+            add_content_to_messages(messages, 'user', err_content)
+            assistant_reply = chat_with_llm(messages)
+            code = insist_get_code(messages, assistant_reply)
+            if code is None:
+                return None
+        else:
+            return result
+    
+def list_to_tuple_rec(obj):
+    if not isinstance(obj, list):
+        return obj
+    else:
+        return tuple([list_to_tuple_rec(e) for e in obj])
+
+
+def tuple_to_list_rec(obj):
+    if not isinstance(obj, tuple):
+        return obj
+    else:
+        return [tuple_to_list_rec(e) for e in obj]
+
+
+def beam_solve(task_id, dataset='training', num_beams=NUM_BEAMS):
+    results = []
+    for attempt_i in range(num_beams):
+        result = solve(task_id, dataset)
+        if result is not None:
+            results.append(result)
+
+    tupled_results = list_to_tuple_rec(results)
+    counts = Counter(tupled_results)
+    return tuple_to_list_rec(counts.most_common())
+            
+
+if __name__ == "__main__":
+    beam_solve('f8b3ba0a', 'training', num_beams=1)
