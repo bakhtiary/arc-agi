@@ -6,6 +6,7 @@
 import base64
 import io
 import json
+import os
 import traceback
 import re
 from pathlib import Path
@@ -44,7 +45,9 @@ arc_cmap = ListedColormap(ARC_COLORS)
 def beam_solve(task_id, dataset='training', num_beams=NUM_BEAMS):
     results = []
     for attempt_i in range(num_beams):
-        result = solve(task_id, dataset)
+        filename = LOG_DIR / task_id / (str(attempt_i)+".json")
+        filename.parent.mkdir(parents=True, exist_ok=True)
+        result = solve(task_id, dataset, filename)
         if result is not None:
             results.append(result)
 
@@ -53,29 +56,35 @@ def beam_solve(task_id, dataset='training', num_beams=NUM_BEAMS):
     return tuple_to_list_rec(counts.most_common())
 
 
-def solve(task_id, dataset):
+def save_messages(messages, logfile):
+    with open(logfile, "w") as fp:
+        json.dump(messages, fp)
+
+
+def solve(task_id, dataset, logfile):
     task = read_task(task_id, dataset)
 
     messages = []
     add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')
 
-    analysis = analyze_problem(messages, task)
+    analyze_problem(messages, task)
 
-    assistant_reply = generate_initial_code(messages, task)
-    code = insist_get_code(messages, assistant_reply)
-    if code is None:
-        return None
+    ask_for_first_solution(messages, task)
 
     for attempt_i in range(MAX_ATTEMPTS):
-        err_content, result = verify_code(code, task)
-        if err_content:
-            add_content_to_messages(messages, 'user', err_content)
-            assistant_reply = chat_with_llm(messages)
-            code = insist_get_code(messages, assistant_reply)
-            if code is None:
-                return None
+        chat_with_llm(messages)
+        save_messages(messages, logfile)
+
+        code = extract_code(messages[-1]['content'][0]['text'])
+        if code is None:
+            send_short_message(messages, 'Please provide the code enclosed in triple backticks.')
         else:
-            return result
+            err_content, result = verify_code(code, task)
+            if err_content:
+                add_content_to_messages(messages, 'user', err_content)
+            else:
+                return result
+
 
 # Define the exceptions that should trigger a retry
 retry_exceptions = (
@@ -154,8 +163,7 @@ def analyze_problem(messages, task):
     
     return chat_with_llm(messages)
 
-
-def generate_initial_code(messages, task):
+def ask_for_first_solution(messages, task):
     content = []
     add_text_to_content(content, ('Good. Now write a Python function named `solve` that trasnfers the input as a grid to the output as a grid.'
             f'\nGrids are represented as Python list of lists. For instance, the input and ouput grids for the first pair of images are: '
@@ -165,19 +173,6 @@ def generate_initial_code(messages, task):
             # TODO: One shot example
     ))
     add_content_to_messages(messages, 'user', content)
-    assistant_reply = chat_with_llm(messages)
-    return assistant_reply
-
-def insist_get_code(messages, assistant_reply, num_attempts=MAX_ATTEMPTS):
-    for attempt_i in range(num_attempts):
-        # pop the last message(bad code block)
-        # messages.pop()
-        code = extract_code(assistant_reply)
-        if code is not None:
-            return code
-        assistant_reply = send_short_message(messages, 'Please provide the code enclosed in triple backticks.')
-        
-    return None
 
 def send_short_message(messages, text):
     add_content_to_messages(messages, 'user', text)
@@ -194,7 +189,7 @@ def grid_is_correct(pred_grid):
 
 
 
-def verify_code(code: str, task: dict):
+def verify_code(code: str, task: dict): # TODO run task in another thread or process for a limited amount of time
     err_content = []
     try:
         local_namespace = {}
