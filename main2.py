@@ -23,7 +23,7 @@ DATA_DIR = Path('data')
 LOG_DIR = Path('log') / datetime.now().strftime('%Y%m%d-%H%M%S')
 
 NUM_BEAMS=100
-MAX_ATTEMPTS = 5
+MAX_ATTEMPTS = 1
 LLM_NUM_RETRIES = 2
 #LLM_MODEL='gpt-3.5-turbo'
 LLM_MODEL='gpt-4o'
@@ -42,15 +42,19 @@ ARC_COLORS = [
 ]
 arc_cmap = ListedColormap(ARC_COLORS)
 
-def beam_solve(task_id, dataset='training', num_beams=NUM_BEAMS):
+def beam_solve(task_id, dataset, num_beams):
     results = []
+    print(f"Solving {task_id}")
     for attempt_i in range(num_beams):
         filename = LOG_DIR / task_id / (str(attempt_i)+".json")
         filename.parent.mkdir(parents=True, exist_ok=True)
         result = solve(task_id, dataset, filename)
         if result is not None:
             results.append(result)
-
+    if results:
+        print(f"we managed to solve {task_id}")
+    else :
+        print(f"we failed to solve {task_id}")
     tupled_results = list_to_tuple_rec(results)
     counts = Counter(tupled_results)
     return tuple_to_list_rec(counts.most_common())
@@ -58,7 +62,7 @@ def beam_solve(task_id, dataset='training', num_beams=NUM_BEAMS):
 
 def save_messages(messages, logfile):
     with open(logfile, "w") as fp:
-        json.dump(messages, fp)
+        json.dump(messages, fp, indent=4)
 
 
 def solve(task_id, dataset, logfile):
@@ -66,10 +70,9 @@ def solve(task_id, dataset, logfile):
 
     messages = []
     add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')
-
-    analyze_problem(messages, task)
-
-    ask_for_first_solution(messages, task)
+    setup_to_analyze_problem(messages, task)
+    chat_with_llm(messages)
+    setup_to_ask_for_first_solution(messages, task)
 
     for attempt_i in range(MAX_ATTEMPTS):
         chat_with_llm(messages)
@@ -154,16 +157,15 @@ def extract_code(assistant_reply):
         return None
 
 
-def analyze_problem(messages, task):
+def setup_to_analyze_problem(messages, task):
     content = []
     add_text_to_content(content, ('Can you analyze the following pair of images and find the'
         'input/output relationship them? (the first is the input and the second is the output)'))
     add_image_to_content(content, task['train'][0]['input'])
     add_image_to_content(content, task['train'][0]['output'])
-    
-    return chat_with_llm(messages)
+    add_content_to_messages(messages, 'user', content)
 
-def ask_for_first_solution(messages, task):
+def setup_to_ask_for_first_solution(messages, task):
     content = []
     add_text_to_content(content, ('Good. Now write a Python function named `solve` that trasnfers the input as a grid to the output as a grid.'
             f'\nGrids are represented as Python list of lists. For instance, the input and ouput grids for the first pair of images are: '
@@ -234,7 +236,7 @@ def verify_code(code: str, task: dict): # TODO run task in another thread or pro
                 add_text_to_content(err_content, 'Please take your time to think about the problem and then write a corrected code enclosed in triple backticks.')
                 return err_content, None
         
-        pred_grid_for_test = local_namespace['solve'](task['test']['input'])
+        pred_grid_for_test = local_namespace['solve'](task['test'][0]['input'])
         return None, pred_grid_for_test
     
 
@@ -256,7 +258,10 @@ def tuple_to_list_rec(obj):
     else:
         return [tuple_to_list_rec(e) for e in obj]
 
-            
+
 
 if __name__ == "__main__":
-    beam_solve('f8b3ba0a', 'training', num_beams=1)
+    training_dir = "data/training"
+    task_ids = [f.split(".")[0] for f in os.listdir(training_dir)] [6:]
+    for task_id in task_ids:
+        beam_solve(task_id, 'training', num_beams=1)
