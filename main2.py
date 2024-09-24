@@ -2,6 +2,7 @@
 #   Test
 #   Add A critic/summarizer LLM
 #   Add tools (like shape counts, etc), sp. based on another LLMs recommendation (similar to RAG)
+#   Run python function in a seperate process for a limitted amount of time
 
 import base64
 import io
@@ -23,7 +24,7 @@ DATA_DIR = Path('data')
 LOG_DIR = Path('log') / datetime.now().strftime('%Y%m%d-%H%M%S')
 
 NUM_BEAMS=100
-MAX_ATTEMPTS = 1
+MAX_ATTEMPTS = 3
 LLM_NUM_RETRIES = 2
 #LLM_MODEL='gpt-3.5-turbo'
 LLM_MODEL='gpt-4o'
@@ -59,11 +60,32 @@ def beam_solve(task_id, dataset, num_beams):
     counts = Counter(tupled_results)
     return tuple_to_list_rec(counts.most_common())
 
+def messages_to_md(messages):
+    md = ''
+    for message_i, message in enumerate(messages, 1):
+        role, content = message['role'], message['content']
+        md += f'# {message_i} - {role}\n'
+        if isinstance(content, str):
+            md += f'{content}\n'
+        else:
+            for ci, c in enumerate(content, 1):
+                md += f'## {ci}\n' 
+                if c['type'] == 'image_url':
+                    md += f'[image]\n'
+                elif c['type'] == 'text':
+                    md += f'{c["text"]}\n'
+
+        md += '\n'
+    return md
+
 
 def save_messages(messages, logfile):
     with open(logfile, "w") as fp:
         json.dump(messages, fp, indent=4)
 
+    with open(str(logfile) + ".md", "w") as fp:
+        fp.write(messages_to_md(messages))
+            
 
 def solve(task_id, dataset, logfile):
     task = read_task(task_id, dataset)
@@ -159,8 +181,8 @@ def extract_code(assistant_reply):
 
 def setup_to_analyze_problem(messages, task):
     content = []
-    add_text_to_content(content, ('Can you analyze the following pair of images and find the'
-        'input/output relationship them? (the first is the input and the second is the output)'))
+    add_text_to_content(content, ('Can you analyze the following pair of images and find the '
+        'input/output relationship between them? (the first is the input and the second is the output)'))
     add_image_to_content(content, task['train'][0]['input'])
     add_image_to_content(content, task['train'][0]['output'])
     add_content_to_messages(messages, 'user', content)
