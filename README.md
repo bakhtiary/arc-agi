@@ -1,3 +1,10 @@
+# TODO
+- [ ] run LLM solve function in thread for a limitted time
+- [x] log output as md
+- [ ] handle multiple test cases in a task (as a list)
+- [ ] predict two solutions for each test case (most_common(2))
+- [ ] if no, predict randomly (placeholder might be beeded)
+
 # Abstraction and Reasoning Corpus for Artificial General Intelligence (ARC-AGI)
 
 This repository contains the ARC-AGI task data, as well as a browser-based interface for humans to try their hand at solving the tasks manually.

@@ -6,7 +6,7 @@
 
 import os
 from datetime import datetime
-from idlelib.run import flush_stdout
+# from idlelib.run import flush_stdout
 from multiprocessing import Pool
 from pathlib import Path
 
@@ -16,6 +16,7 @@ from experimenter import experiment
 LOG_DIR = Path('log') / datetime.now().strftime('%Y%m%d-%H%M%S')
 
 def crappy_solve(task_id, dataset, num_beams, log_dir):
+    print('crap')
     return log_dir, dataset, task_id, []
 
 if __name__ == "__main__":

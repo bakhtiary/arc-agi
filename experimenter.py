@@ -30,7 +30,7 @@ def experiment(solver, task_ids, log_dir, dataset):
     _task_done(solver(**{'task_id': task_ids[0], 'dataset': dataset, 'num_beams': 1, 'log_dir': str(log_dir)}))
     with Pool(5) as p:
         for job_args in [(task_id, dataset, 1, str(log_dir)) for task_id in task_ids ]:
-            print(job_args)
+            # print(job_args)
             p.apply_async(
                 solver,
                 args=job_args,
@@ -38,6 +38,6 @@ def experiment(solver, task_ids, log_dir, dataset):
                 # error_callback=_task_error
             )
 
-    p.close()
-    p.join()
+        p.close()
+        p.join()
     print(list_of_results)
