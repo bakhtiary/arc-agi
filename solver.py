@@ -1,34 +1,25 @@
-# Todo:
-#   Test
-#   Add A critic/summarizer LLM
-#   Add tools (like shape counts, etc), sp. based on another LLMs recommendation (similar to RAG)
-#   Run python function in a seperate process for a limitted amount of time
-
 import base64
 import io
 import json
-import os
-import traceback
 import re
+import traceback
 from pathlib import Path
-from datetime import datetime
 from typing import Counter
 
-import numpy as np
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import litellm
-import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+
+from task_utils import read_task
 
 DATA_DIR = Path('data')
-LOG_DIR = Path('log') / datetime.now().strftime('%Y%m%d-%H%M%S')
 
 NUM_BEAMS=100
 MAX_ATTEMPTS = 3
 LLM_NUM_RETRIES = 2
-#LLM_MODEL='gpt-3.5-turbo'
 LLM_MODEL='gpt-4o'
-
 ARC_COLORS = [
     '#000',
     '#0074D9',  # /* blue */
@@ -43,22 +34,22 @@ ARC_COLORS = [
 ]
 arc_cmap = ListedColormap(ARC_COLORS)
 
-def beam_solve(task_id, dataset, num_beams):
+
+def beam_solve(task_id, dataset, num_beams, log_dir):
     results = []
     print(f"Solving {task_id}")
     for attempt_i in range(num_beams):
-        filename = LOG_DIR / task_id / (str(attempt_i)+".json")
+        filename = log_dir / task_id / (str(attempt_i)+".json")
         filename.parent.mkdir(parents=True, exist_ok=True)
         result = solve(task_id, dataset, filename)
         if result is not None:
             results.append(result)
     if results:
-        print(f"we managed to solve {task_id}")
-    else :
-        print(f"we failed to solve {task_id}")
-    tupled_results = list_to_tuple_rec(results)
-    counts = Counter(tupled_results)
-    return tuple_to_list_rec(counts.most_common())
+        tupled_results = list_to_tuple_rec(results)
+        counts = Counter(tupled_results)
+        return task_id, results[0] #tuple_to_list_rec(counts.most_common())
+    else:
+        return task_id, None
 
 def messages_to_md(messages):
     md = ''
@@ -69,7 +60,7 @@ def messages_to_md(messages):
             md += f'{content}\n'
         else:
             for ci, c in enumerate(content, 1):
-                md += f'## {ci}\n' 
+                md += f'## {ci}\n'
                 if c['type'] == 'image_url':
                     md += f'[image]\n'
                 elif c['type'] == 'text':
@@ -85,7 +76,7 @@ def save_messages(messages, logfile):
 
     with open(str(logfile) + ".md", "w") as fp:
         fp.write(messages_to_md(messages))
-            
+
 
 def solve(task_id, dataset, logfile):
     task = read_task(task_id, dataset)
@@ -111,10 +102,11 @@ def solve(task_id, dataset, logfile):
                 return result
 
 
-# Define the exceptions that should trigger a retry
 retry_exceptions = (
     Exception,  # Replace with specific exceptions if litellm defines any
 )
+
+
 def add_content_to_messages(messages, role, content):
     assert isinstance(content, list) or isinstance(content, str)
     if isinstance(content, str):
@@ -124,9 +116,10 @@ def add_content_to_messages(messages, role, content):
 
     messages.append({
         'role': role,
-        'content': content    
+        'content': content
     })
-    
+
+
 def make_image_base64(input_grid):
 
     plt.imshow(input_grid, cmap=arc_cmap, vmin=0, vmax=10)
@@ -136,6 +129,7 @@ def make_image_base64(input_grid):
     my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
     return my_base64_jpgData
 
+
 def add_image_to_content(content, grid):
     base64_img = make_image_base64(grid)
     content.append({
@@ -144,6 +138,7 @@ def add_image_to_content(content, grid):
             'url': f'data:image/jpeg;base64,{base64_img}'
         }
     })
+
 
 def add_text_to_content(content, text):
     content.append({
@@ -170,6 +165,7 @@ def chat_with_llm(messages):
     add_content_to_messages(messages, 'assistant', assistant_reply)
     return assistant_reply
 
+
 def extract_code(assistant_reply):
     code_blocks = re.findall(r'```(?:python)?\n(.*?)```', assistant_reply, re.DOTALL)
     if code_blocks:
@@ -187,6 +183,7 @@ def setup_to_analyze_problem(messages, task):
     add_image_to_content(content, task['train'][0]['output'])
     add_content_to_messages(messages, 'user', content)
 
+
 def setup_to_ask_for_first_solution(messages, task):
     content = []
     add_text_to_content(content, ('Good. Now write a Python function named `solve` that trasnfers the input as a grid to the output as a grid.'
@@ -197,6 +194,7 @@ def setup_to_ask_for_first_solution(messages, task):
             # TODO: One shot example
     ))
     add_content_to_messages(messages, 'user', content)
+
 
 def send_short_message(messages, text):
     add_content_to_messages(messages, 'user', text)
@@ -212,7 +210,6 @@ def grid_is_correct(pred_grid):
         return False
 
 
-
 def verify_code(code: str, task: dict): # TODO run task in another thread or process for a limited amount of time
     err_content = []
     try:
@@ -222,10 +219,10 @@ def verify_code(code: str, task: dict): # TODO run task in another thread or pro
         error_msg = traceback.format_exc()
         add_text_to_content(err_content, (f'The following error happened when evaluating your function `solve`:'
             f'\n{error_msg}\n'
-            'Please write a corrected code enclosed in triple backticks.')                                 
+            'Please write a corrected code enclosed in triple backticks.')
         )
         return err_content, None
-    
+
     if 'solve' not in local_namespace:
         add_text_to_content(err_content, ('Function `solve` is not defined.'
             'Please try again and make sure the code is enclosed in triple backticks.'))
@@ -233,21 +230,21 @@ def verify_code(code: str, task: dict): # TODO run task in another thread or pro
     else:
         solve_fp = local_namespace['solve']
         for pair in task['train']:
-            input_grid, output_grid = pair['input'], pair['output']
+            test_input_grid, output_grid = pair['input'], pair['output']
             try:
-                pred_grid = solve_fp(input_grid)
+                pred_grid = solve_fp(test_input_grid)
             except Exception:
                 error_msg = traceback.format_exc()
                 add_text_to_content(err_content, (f'The following error happened when calling your function `solve`:'
-                    f'\n{error_msg}\n'
-                    f'The input was: {str(input_grid)}'
-                    'Please write a corrected code enclosed in triple backticks.')                                 
-                )
+                                                  f'\n{error_msg}\n'
+                                                  f'The input was: {str(test_input_grid)}'
+                                                  'Please write a corrected code enclosed in triple backticks.')
+                                    )
                 return err_content, None
-            
+
             if output_grid != pred_grid:
-                add_text_to_content(err_content, f'Wrong output for input: `{str(input_grid)}`')
-                add_image_to_content(err_content, input_grid)
+                add_text_to_content(err_content, f'Wrong output for input: `{str(test_input_grid)}`')
+                add_image_to_content(err_content, test_input_grid)
                 add_text_to_content(err_content, f'Expected output: `{str(output_grid)}`')
                 add_image_to_content(err_content, output_grid)
                 if grid_is_correct(pred_grid):
@@ -257,14 +254,20 @@ def verify_code(code: str, task: dict): # TODO run task in another thread or pro
                     add_text_to_content(err_content, f'The output generated by your code was not a 2d grid. it was: `{str(pred_grid)}`')
                 add_text_to_content(err_content, 'Please take your time to think about the problem and then write a corrected code enclosed in triple backticks.')
                 return err_content, None
-        
-        pred_grid_for_test = local_namespace['solve'](task['test'][0]['input'])
-        return None, pred_grid_for_test
-    
 
-def read_task(task_id, dataset):
-    json_text = (DATA_DIR / dataset / f'{task_id}.json').read_text()
-    return json.loads(json_text)
+        test_input_grid = task['test'][0]['input']
+        try:
+            pred_grid_for_test = local_namespace['solve'](test_input_grid)
+        except Exception:
+            error_msg = traceback.format_exc()
+            add_text_to_content(err_content, (f'The following error happened when running the algorithm on the test input:'
+                                              f'\n{error_msg}\n'
+                                              f'The input was: {test_input_grid}'
+                                              'Please write a corrected code enclosed in triple backticks.')
+                                )
+            return err_content, None
+
+        return None, pred_grid_for_test
 
 
 def list_to_tuple_rec(obj):
@@ -279,11 +282,3 @@ def tuple_to_list_rec(obj):
         return obj
     else:
         return [tuple_to_list_rec(e) for e in obj]
-
-
-
-if __name__ == "__main__":
-    training_dir = "data/training"
-    task_ids = [f.split(".")[0] for f in os.listdir(training_dir)] [6:]
-    for task_id in task_ids:
-        beam_solve(task_id, 'training', num_beams=1)
