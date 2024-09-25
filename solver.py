@@ -36,20 +36,20 @@ arc_cmap = ListedColormap(ARC_COLORS)
 
 
 def beam_solve(task_id, dataset, num_beams, log_dir):
+    (log_dir / task_id).mkdir(parents=True, exist_ok=True)
     results = []
     print(f"Solving {task_id}")
     for attempt_i in range(num_beams):
         filename = log_dir / task_id / (str(attempt_i)+".json")
-        filename.parent.mkdir(parents=True, exist_ok=True)
         result = solve(task_id, dataset, filename)
         if result is not None:
             results.append(result)
     if results:
         tupled_results = list_to_tuple_rec(results)
         counts = Counter(tupled_results)
-        return task_id, results[0] #tuple_to_list_rec(counts.most_common())
+        return log_dir, dataset, task_id, results[0] #tuple_to_list_rec(counts.most_common())
     else:
-        return task_id, None
+        return log_dir, dataset, task_id, None
 
 def messages_to_md(messages):
     md = ''
