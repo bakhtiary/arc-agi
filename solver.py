@@ -49,7 +49,7 @@ def beam_solve(task_id, dataset, num_beams, log_dir):
         counts = Counter(tupled_results)
         return log_dir, dataset, task_id, results[0] #tuple_to_list_rec(counts.most_common())
     else:
-        return log_dir, dataset, task_id, None
+        return log_dir, dataset, task_id, ["fake stuff"]
 
 def messages_to_md(messages):
     md = ''

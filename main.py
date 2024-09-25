@@ -6,8 +6,6 @@
 
 import os
 from datetime import datetime
-# from idlelib.run import flush_stdout
-from multiprocessing import Pool
 from pathlib import Path
 
 from solver import beam_solve
@@ -21,7 +19,7 @@ def crappy_solve(task_id, dataset, num_beams, log_dir):
 
 if __name__ == "__main__":
     training_dir = "data/training"
-    task_ids = [f.split(".")[0] for f in os.listdir(training_dir)] [4:8]
-    experiment(crappy_solve, task_ids, LOG_DIR, dataset="training")
+    task_ids = [f.split(".")[0] for f in os.listdir(training_dir)][10:]
+    experiment(beam_solve, task_ids, LOG_DIR, dataset="training")
 
 
