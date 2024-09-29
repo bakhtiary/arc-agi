@@ -1,8 +1,8 @@
 # TODO
 - [ ] run LLM solve function in thread for a limitted time
 - [x] log output as md
-- [ ] handle multiple test cases in a task (as a list)
-- [ ] predict two solutions for each test case (most_common(2))
+- [x] handle multiple test cases in a task (as a list)
+- [x] predict two solutions for each test case (most_common(2))
 - [ ] if no, predict randomly (placeholder might be beeded)
 
 # Abstraction and Reasoning Corpus for Artificial General Intelligence (ARC-AGI)
