@@ -24,7 +24,7 @@ def crappy_solve(task_id, dataset, num_beams, log_dir):
 if __name__ == "__main__":
     dataset = 'training'
     # task_ids = ["c8f0f002"]
-    task_ids = get_tasks(dataset)
+    task_ids = get_tasks(dataset)[0:10]
     experiment(beam_solve, task_ids, LOG_DIR, dataset=dataset, pool_size=10)
 
 
