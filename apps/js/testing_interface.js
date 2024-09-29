@@ -179,7 +179,7 @@ function randomTask() {
         var task_index = Math.floor(Math.random() * tasks.length)
 
         var task = tasks[task_index];
-        download_url = "https://raw.githubusercontent.com/fchollet/ARC-AGI/master/data/training/c8f0f002.json"
+        download_url = "https://raw.githubusercontent.com/fchollet/ARC-AGI/master/data/training/6e02f1e3.json"
         $.getJSON(download_url, function(json) {
             try {
                 train = json['train'];

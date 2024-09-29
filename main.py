@@ -4,7 +4,6 @@
 #   Add tools (like shape counts, etc), sp. based on another LLMs recommendation (similar to RAG)
 #   Run python function in a seperate process for a limitted amount of time
 
-import os
 from datetime import datetime
 from pathlib import Path
 import warnings

@@ -1,5 +1,3 @@
-import base64
-import io
 import json
 import re
 import traceback
@@ -8,10 +6,9 @@ from collections import Counter
 
 import litellm
 import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib.colors import ListedColormap
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
+from image_utils import make_image_base64, make_all_images_base64
 from task_utils import read_task
 
 # litellm.set_verbose = True
@@ -23,19 +20,6 @@ NUM_BEAMS=100
 MAX_ATTEMPTS = 3
 LLM_NUM_RETRIES = 2
 LLM_MODEL='gpt-4o'
-ARC_COLORS = [
-    '#000',
-    '#0074D9',  # /* blue */
-    '#FF4136',  # /* red */
-    '#2ECC40',  # /* green */
-    '#FFDC00',  # /* yellow */
-    '#AAAAAA',  # /* grey */
-    '#F012BE',  # /* fuschia */
-    '#FF851B',  # /* orange */
-    '#7FDBFF',  # /* teal */
-    '#870C25',  # /* brown */
-]
-arc_cmap = ListedColormap(ARC_COLORS)
 
 
 def beam_solve(task_id, dataset, num_beams, log_dir, msg):
@@ -142,14 +126,14 @@ def add_content_to_messages(messages, role, content):
     })
 
 
-def make_image_base64(input_grid):
-
-    plt.imshow(input_grid, cmap=arc_cmap, vmin=0, vmax=10)
-    my_stringIObytes = io.BytesIO()
-    plt.savefig(my_stringIObytes, format='jpg')
-    my_stringIObytes.seek(0)
-    my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
-    return my_base64_jpgData
+def add_all_images_to_content(content, all_inputs):
+    base64_img = make_all_images_base64(all_inputs)
+    content.append({
+        'type': 'image_url',
+        'image_url': {
+            'url': f'data:image/jpeg;base64,{base64_img}'
+        }
+    })
 
 
 def add_image_to_content(content, grid):
@@ -200,9 +184,10 @@ def extract_code(assistant_reply):
 def setup_to_analyze_problem(messages, task):
     content = []
     add_text_to_content(content, ('Can you analyze the following pair of images and find the '
-        'input/output relationship between them? (the first is the input and the second is the output)'))
-    add_image_to_content(content, task['train'][0]['input'])
-    add_image_to_content(content, task['train'][0]['output'])
+        'input/output relationship between them? In each row, the first is the input and the second is the output:'))
+    # add_image_to_content(content, task['train'][0]['input'])
+    # add_image_to_content(content, task['train'][0]['output'])
+    add_all_images_to_content(content, task['train'])
     add_content_to_messages(messages, 'user', content)
 
 
