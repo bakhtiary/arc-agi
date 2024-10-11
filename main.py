@@ -8,6 +8,9 @@ from datetime import datetime
 from pathlib import Path
 import warnings
 
+from simple_lens import SimpleLensStateMachine
+from solver_machine_solver import StateMachineSolver
+
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
 
 from task_utils import get_tasks
@@ -26,6 +29,10 @@ if __name__ == "__main__":
     # task_ids = ["c8f0f002"]
     # md analysis by amir --> ff28f65a
     task_ids = get_tasks(dataset)[0:10]
+
+    state_machine_solver = StateMachineSolver(SimpleLensStateMachine())
+
     experiment(beam_solve, task_ids, LOG_DIR, dataset=dataset, pool_size=10)
+    experiment(state_machine_solver, task_ids, LOG_DIR, dataset=dataset, pool_size=10)
 
 
