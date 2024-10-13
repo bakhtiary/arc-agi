@@ -1,4 +1,4 @@
-from state_machine_solver_utils import extract_and_run_mapping_code_works, extract_and_run_lens_code
+from state_machine_solver_utils import extract_and_run_mapping_code, extract_and_run_lens_code
 
 
 # تکستت و عکس را به جی پیتی قور اوه می دهیم.
@@ -14,11 +14,12 @@ from state_machine_solver_utils import extract_and_run_mapping_code_works, extra
 
 
 class SimpleLensStateMachine:
-    def __init__(self, task):
+    def __init__(self, dataset, task_id):
         self.start_state = "entry_point"
         self.states = {}
+        self.dataset = dataset
         self.run_results = []
-        self.task = task
+        self.task_id = task_id
         self.max_num_failed = 5
         self.num_failed = 0
         self.states["entry_point"] = dict(
@@ -31,7 +32,7 @@ class SimpleLensStateMachine:
             next_state= lambda response: "get_mapping_code" if "yes" in response else "get_lens_code")
         self.states["get_mapping_code"] = dict(
             message_to_send=lambda :"please generate the mapping code for this hypothesis",
-            next_state=lambda response: "success" if extract_and_run_mapping_code_works(response, self.task) else "mapping_code_failed"
+            next_state=lambda response: "success" if self.extract_and_run_mapping_code_works(response) else "mapping_code_failed"
             )
         self.states["get_lens_code"] = dict(
             message_to_send=lambda:"""
@@ -55,11 +56,11 @@ class SimpleLensStateMachine:
         self.states["mapping_code_failed"] = dict(
             message_to_send=lambda: f"""We ran the given code on the following inputs and got {self.run_results[-1]} try to fix this error and try again""",
             do_work=self.mapping_code_failed_work,
-            next_state= lambda response: "success" if extract_and_run_mapping_code_works(response, self.task) else "mapping_code_failed" if self.num_failed < self.max_num_failed else "total_failure"
+            next_state= lambda response: "success" if self.extract_and_run_mapping_code_works(response) else "mapping_code_failed" if self.num_failed < self.max_num_failed else "total_failure"
         )
         self.states["total_failure"] = dict(
             next_state=None
-            )
+        )
 
 
 
@@ -67,5 +68,8 @@ class SimpleLensStateMachine:
         self.num_failed += 1
 
     def extract_and_run_lens_code(self, response):
-        self.run_results.append(extract_and_run_lens_code(response, self.task))
+        self.run_results.append(extract_and_run_lens_code(response))
+
+    def extract_and_run_mapping_code_works(self, response):
+        self.run_results.append(extract_and_run_mapping_code(response, self.dataset, self.task_id))
 

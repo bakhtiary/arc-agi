@@ -17,5 +17,12 @@ class StateMachineSolverTest(unittest.TestCase):
         self.sms = StateMachineSolver(SimpleLensStateMachine, llm_wrapper=self.llm_wrapper_mock)
 
     def testCallWorks(self):
-        self.llm_wrapper_mock.completion.return_value = "yes hassan"
+        self.llm_wrapper_mock.completion.return_value = (f"""
+yes hassan!
+```python
+def solve(input_grid):
+    return [[5, 5, 5, 5, 3, 5, 5, 5, 3, 5], [1, 1, 5, 5, 5, 5, 5, 5, 5, 5], [1, 5, 5, 5, 5, 5, 1, 1, 5, 2], [5, 5, 3, 5, 5, 5, 5, 1, 5, 2], [5, 5, 5, 5, 2, 2, 5, 5, 5, 5], [2, 5, 3, 5, 5, 5, 5, 3, 5, 2], [2, 5, 5, 5, 2, 2, 5, 5, 5, 2], [5, 5, 5, 5, 5, 5, 5, 5, 5, 5], [5, 5, 5, 5, 5, 5, 5, 5, 5, 2], [3, 5, 5, 5, 5, 5, 5, 3, 5, 2]]
+```     
+        
+        """)
         self.sms.__call__("c8f0f002", "training", 5, LOG_DIR, "hassan")

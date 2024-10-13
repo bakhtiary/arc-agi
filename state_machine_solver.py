@@ -21,7 +21,7 @@ class StateMachineSolver:
         print(f'Solving {task_id} [{msg}]')
         log_file = log_dir / task_id / f'{1}.json'
 
-        cur_state_machine: SimpleLensStateMachine = self.state_machine_class(task)
+        cur_state_machine: SimpleLensStateMachine = self.state_machine_class(dataset, task_id)
         cur_state_name = cur_state_machine.start_state
         messages = []
         add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')

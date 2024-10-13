@@ -1,4 +1,4 @@
-from main2 import verify_code, grid_is_correct
+from solver import grid_is_correct, verify_code
 
 
 def test_grid_is_correct():

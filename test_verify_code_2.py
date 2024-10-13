@@ -1,7 +1,3 @@
-from main2 import verify_code, grid_is_correct
-
-
-
 
 
 def test_hassan():
