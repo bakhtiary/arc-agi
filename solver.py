@@ -6,6 +6,7 @@ from collections import Counter
 
 import litellm
 import numpy as np
+import requests
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from image_utils import make_image_base64, make_all_images_base64
@@ -159,15 +160,40 @@ def add_text_to_content(content, text):
     wait=wait_exponential(multiplier=1, min=4, max=10),
     reraise=True
 )
-def chat_with_llm(messages):
-    response = litellm.completion(
-        messages=messages,
-        stream=False,
-        model=LLM_MODEL,
-        max_tokens=4096,
-        temperature=0,
-    )
-    assistant_reply = response.choices[0]['message']['content'].strip()
+
+def llama_completion(messages, max_tokens=4096, temperature=0):
+    url = "https://f214-34-170-19-203.ngrok-free.app/generate10"
+    headers = {
+        "Content-Type": "application/json"
+    }
+    
+    data = {
+        "messages": messages,
+        "model": "LLaMA",  # Update to the model name you are running on localhost if needed
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "stream": False
+    }
+    
+    response = requests.post(url, headers=headers, json=data)
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"Error: {response.status_code}, {response.text}")
+
+def chat_with_llm(messages, llm_model='llama'):
+    if llm_model == 'llama':
+        response = llama_completion(messages)
+    else:
+        response = litellm.completion(
+            messages=messages,
+            stream=False,
+            model=llm_mode,
+            max_tokens=4096,
+            temperature=0,
+        )
+    assistant_reply = response['choices'][0]['message']['content'].strip()
     add_content_to_messages(messages, 'assistant', assistant_reply)
     return assistant_reply
 

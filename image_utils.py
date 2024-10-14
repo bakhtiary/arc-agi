@@ -57,9 +57,13 @@ def draw_axis(axis_0, sample_grid, draw_edges=True, hide_spine_border=True):
         linewidth = 10 - ((max(len(sample_grid), len(sample_grid[0]))-1)//10)*4
     else:
         linewidth = 0
+    #sample_grid = np.array(sample_grid).T
+    #print('a', sample_grid)
+
     axis_0.pcolormesh(sample_grid, cmap=arc_cmap, vmin=0, vmax=10, edgecolors='white', linewidth=linewidth)
     axis_0.set_xticks([])
     axis_0.set_yticks([])
+    axis_0.invert_yaxis()
 
     if hide_spine_border:
         for spine in axis_0.spines.values():

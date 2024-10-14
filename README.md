@@ -4,6 +4,16 @@
 - [x] handle multiple test cases in a task (as a list)
 - [x] predict two solutions for each test case (most_common(2))
 - [ ] if no, predict randomly (placeholder might be beeded)
+- [ ] tool use idea:
+    - [ ] ask second LLM to convert a functional solvers to normal python
+        (main LLM could be prompted write a python function ... you can assume the following functions are available for your use) (the list of this functions
+        could be drived using transalations of functional solvers)
+
+    - [ ] aks a second LLM what abstraction could be useful for this task (set of 
+        descrete objects, set of lines, patches, zones, etc) based on the keywords
+        extracted from the main LLM (~= ARQL)
+
+    - [ ] ask LLMs to write python code to see the picture better (measure distance, etc)
 
 # Abstraction and Reasoning Corpus for Artificial General Intelligence (ARC-AGI)
 

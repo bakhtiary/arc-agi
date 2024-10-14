@@ -41,8 +41,8 @@ def experiment(solver, task_ids, log_dir, dataset, pool_size=5):
                 print(f'Task error: {raised_exception}')
                 fout.write(f'Task error: {raised_exception}\n')
 
-        # _task_done(solver(**{'task_id': task_ids[0], 'dataset': dataset, 'num_beams': 1, 'log_dir': log_dir}))
-        # return
+        # _task_done(solver(**{'task_id': task_ids[0], 'dataset': dataset, 'num_beams': 1, 'log_dir': log_dir, 'msg': ''}))
+        
         num_tasks = len(task_ids)
         all_job_args = [(task_id, dataset, 1, log_dir, f'{task_i}/{num_tasks}')
             for task_i, task_id in enumerate(task_ids, 1)]

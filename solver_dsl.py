@@ -1,10 +1,9 @@
-import importlib
-import inspect
 from pathlib import Path
-import re
 import sys
 import traceback
+import importlib
 
+from dsl_inspect_utils import generate_dsl_docs_parse
 from task_utils import read_task
 
 
@@ -31,63 +30,11 @@ you only need to focus on comming up with a high-level solution.
 #   - Add example or examples (few shots)
 #   - Ability to declare dsl codes
 
-sys.path.append('arc-dsl')
-
-import inspect
-import importlib
-
-def generate_dsl_docs_inspect():
-    dsl_module = importlib.import_module('dsl')
-    functions = inspect.getmembers(dsl_module, inspect.isfunction)
-    docs = []
-    for name, func in functions:
-        sig = inspect.signature(func)
-        annotations = func.__annotations__
-        params = []
-        for param_name, param in sig.parameters.items():
-            if param_name in annotations:
-                param_type = annotations[param_name]
-                params.append(f"{param_name}: {param_type}")
-            else:
-                params.append(f"{param_name}: {param.annotation if param.annotation is not inspect.Parameter.empty else 'Any'}")
-        
-        return_type = annotations.get('return', 'None')
-        doc = inspect.getdoc(func)
-        doc_short = doc.split('.')[0] if doc else "No description available"
-        docs.append(f"def {name}({', '.join(params)}) -> {return_type.__name__ if isinstance(return_type, type) else return_type}:  # {doc_short}")
-    
-    return "\n".join(docs)
-
-
-def generate_dsl_docs_parse():
-    file_content = (Path('arc-dsl') / 'dsl.py').read_text()
-    function_pattern = re.compile(
-        r"(def\s+\w+\(.*?\)\s*->\s*[^\:]*:\s*\"\"\"[^\"]*\"\"\"\n)(?:.|\n)*?(?=\ndef|\Z)", 
-        re.DOTALL
-    )
-
-    def format_function(match):
-        function_signature_and_doc = match.group(1)
-        function_signature_and_doc = re.sub(r"\s*\n\s*", " ", function_signature_and_doc)
-        function_signature_and_doc = function_signature_and_doc.replace(': """', '  #')
-        function_signature_and_doc = function_signature_and_doc.replace('"""', '')
-        return function_signature_and_doc
-    
-    types = (Path('arc-dsl') / 'arc_types.py').read_text().strip()
-    
-    funcs = function_pattern.sub(format_function, file_content)
-    funcs = '\n'.join([f.strip() for f in funcs.splitlines()[3:]])
-
-    return f'Types:\n{types}\n\n\nFunctions:\n{funcs}'
-
-import re
-
-
-#tool_docs_inspect = generate_dsl_docs_inspect()
-# print(tool_docs_inspect)
-
 tool_docs_parse = generate_dsl_docs_parse()
 print(tool_docs_parse)
+
+print('Adding arc-dsl to sys.path ...')
+sys.path.append('arc-dsl')
 
 dsl_module = importlib.import_module('dsl')
 dsl_env_orig = {}
@@ -119,3 +66,5 @@ if __name__ == '__main__':
 O = vconcat(x1, I)"""
 
     print(verify_dsl_code(solve_4c4377d9, task['train'][0]['input'], task['train'][0]['output']))
+
+    # a61ba2ce
