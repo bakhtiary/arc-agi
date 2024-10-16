@@ -23,8 +23,8 @@ class SimpleLensStateMachine:
         self.max_num_failed = 5
         self.num_failed = 0
         self.states["entry_point"] = dict(
-            message_to_send=lambda: "given this image please give me a hypothesis about the relationship between "
-                            "the inputs (left) and the outputs (right) ", send_all_images=True,
+            message_to_send=[lambda: "Given this image please give me a hypothesis about the relationship between "
+                            "the inputs (left) and the outputs (right)", lambda: "{all_in_one_images}"], # use {{x}} if this is an f-string
             next_state="is_concrete")
         self.states["is_concrete"] = dict(
             message_to_send=lambda: "is the hypothesis that you just described, concrete enough "
@@ -62,13 +62,11 @@ class SimpleLensStateMachine:
             next_state=None
         )
 
-
-
     def mapping_code_failed_work(self, response):
         self.num_failed += 1
 
     def extract_and_run_lens_code(self, response):
-        self.run_results.append(extract_and_run_lens_code(response))
+        self.run_results.append(extract_and_run_lens_code(response, self.task_id))
 
     def extract_and_run_mapping_code_works(self, response):
         self.run_results.append(extract_and_run_mapping_code(response, self.task_id, self.dataset))

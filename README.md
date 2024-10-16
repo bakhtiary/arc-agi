@@ -1,9 +1,14 @@
 # TODO
-- [ ] run LLM solve function in thread for a limitted time
+- [x] run LLM solve function in thread for a limitted time
+- [ ] use runner server which reads from stdin and supports healthcheck
 - [x] log output as md
 - [x] handle multiple test cases in a task (as a list)
 - [x] predict two solutions for each test case (most_common(2))
-- [ ] if no, predict randomly (placeholder might be beeded)
+- [x] if no, predict randomly (placeholder might be beeded)
+- [ ] move beaming to experiment
+- [ ] clean the proto state machine
+- [ ] md for state machine solver
+- [ ] remove llm_model and support weak_model and vision_model
 - [ ] tool use idea:
     - [ ] ask second LLM to convert a functional solvers to normal python
         (main LLM could be prompted write a python function ... you can assume the following functions are available for your use) (the list of this functions
@@ -14,6 +19,7 @@
         extracted from the main LLM (~= ARQL)
 
     - [ ] ask LLMs to write python code to see the picture better (measure distance, etc)
+
 
 # Abstraction and Reasoning Corpus for Artificial General Intelligence (ARC-AGI)
 

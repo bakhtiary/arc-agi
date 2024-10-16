@@ -1,4 +1,4 @@
-from solver import grid_is_correct, verify_code
+from implicit_state_machine_solver import grid_is_correct, verify_code
 
 
 def test_grid_is_correct():

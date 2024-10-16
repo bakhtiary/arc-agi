@@ -1,5 +1,6 @@
 import time
 from multiprocessing import Pool
+import traceback
 
 from task_utils import read_task
 
@@ -21,7 +22,20 @@ def score_detailed(task_id, dataset, solutions):
     return score / len(test_input_grids)
 
 def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
+    """
+        pool_size = -1: no multi-processing
+    """
     log_dir.mkdir(parents=True, exist_ok=True)
+
+    def solver_wrapper(args):
+        try:
+            solver(*args)
+        except Exception as e:
+            print('hi')
+            error_msg = traceback.format_exc()
+            e = Exception(error_msg)
+            e.ak_data = {'task_id': args[0], 'dataset': args[1]}
+            raise e
     
     # Async model is cooporative multitasking with no preemption
     with open(f'{log_dir}/results.txt', 'a') as fout:
@@ -41,21 +55,28 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
                 print(f'Task error: {raised_exception}')
                 fout.write(f'Task error: {raised_exception}\n')
 
-        # _task_done(solver(**{'task_id': task_ids[0], 'dataset': dataset, 'num_beams': 1, 'log_dir': log_dir, 'msg': ''}))
-        
         num_tasks = len(task_ids)
-        all_job_args = [(task_id, dataset, 1, log_dir, f'{task_i}/{num_tasks}')
+        all_job_args = [(task_id, dataset, log_dir, 1, f'{task_i}/{num_tasks}')
             for task_i, task_id in enumerate(task_ids, 1)]
-        with Pool(pool_size) as p:
+        
+        if pool_size == -1:
             for job_args in all_job_args:
-                # print(job_args)
-                p.apply_async(
-                    solver,
-                    args=job_args,
-                    callback=_task_done,
-                    error_callback=_task_error
-                )
+                try:
+                    result = solver_wrapper(job_args)
+                    _task_done(result)
+                except Exception as e:
+                    _task_error(e)
+        else:
+            with Pool(pool_size) as p:
+                for job_args in all_job_args:
+                    # print(job_args)
+                    p.apply_async(
+                        solver_wrapper,
+                        args=job_args,
+                        callback=_task_done,
+                        error_callback=_task_error
+                    )
 
-            p.close()
-            p.join()
+                p.close()
+                p.join()
     print(list_of_results)

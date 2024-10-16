@@ -31,8 +31,8 @@ def make_image_base64(grid) -> str:
     return my_base64_jpgData
 
 
-def make_all_images_base64(all_grids, draw_edges=True, hide_spine_border=True) -> str:
-    plot_all_Images(all_grids)
+def make_all_in_one_images_base64(all_grids, draw_edges=True, hide_spine_border=True) -> str:
+    plot_all_in_one_images(all_grids)
     my_stringIObytes = io.BytesIO()
     plt.savefig(my_stringIObytes, format='jpg')
     my_stringIObytes.seek(0)
@@ -45,7 +45,7 @@ def plot_Image(grid, draw_edges=True, hide_spine_border=True):
     draw_axis(ax, grid, draw_edges=draw_edges, hide_spine_border=hide_spine_border)
     
 
-def plot_all_Images(all_samples, draw_edges=True, hide_spine_border=True):
+def plot_all_in_one_images(all_samples, draw_edges=True, hide_spine_border=True):
     fig, axs = plt.subplots(len(all_samples), 2, figsize=(10, 5*len(all_samples)))
     for i, sample in enumerate(all_samples):
         draw_axis(axs[i, 0], sample['input'], draw_edges=draw_edges, hide_spine_border=hide_spine_border)
@@ -82,13 +82,13 @@ def draw_crap():
                      {'input': [[0, 0, 0], [1, 1, 1], [0, 0, 0]], 'output': [[0, 0, 0], [0, 0, 0], [1, 1, 1]]},
                      {'input': [[0, 1, 0], [1, 1, 0], [0, 0, 0]], 'output': [[0, 0, 0], [0, 1, 0], [1, 1, 0]]},
                      {'input': [[0, 2, 2], [0, 0, 2], [0, 0, 0]], 'output': [[0, 0, 0], [0, 2, 2], [0, 0, 2]]}]
-    plot_all_Images(sample_inputs)
+    plot_all_in_one_images(sample_inputs)
     plt.savefig('grid_visualization.png')
     plt.show()
 
 def draw_specific_all(task_id, draw_id=True):
     train = read_task(task_id, dataset='training')['train']
-    plot_all_Images(train)
+    plot_all_in_one_images(train)
     if draw_id:
         plt.figtext(0.5, 0.01, task_id, wrap=True, horizontalalignment='center', fontsize=12)
     plt.savefig('grid_visualization.png')

@@ -3,10 +3,13 @@ import os
 from pathlib import Path
 import re
 
-def parse_results():
+def parse_results(dataset):
     task_scores = defaultdict(list)
     root_dir = 'important-run-logs'
-    pattern = r"Task done: dataset='.*' task_id='([^']*)', score=([0-9.]+)"
+    if dataset == 'both':
+        pattern = rf"Task done: dataset='{dataset}' task_id='([^']*)', score=([0-9.]+)"
+    else:
+        pattern = rf"Task done: dataset='.*' task_id='([^']*)', score=([0-9.]+)"
 
     # Walk through all files in the root_dir
     for dir in os.listdir(root_dir):
@@ -31,8 +34,8 @@ def majority_of_bool_list(v):
         return None # tie
     return num_t > len(v) / 2
     
-if __name__ == "__main__":
-    task_scores = parse_results()
+def get_task_score_groups(dataset):
+    task_scores = parse_results(dataset)
     task_score_groups = dict()
     task_score_groups['simple'] = [k for k,v in task_scores.items()
         if len(v) >= 2 and majority_of_bool_list(v)]
@@ -40,6 +43,10 @@ if __name__ == "__main__":
         if len(v) >= 2 and majority_of_bool_list(v) is None]
     task_score_groups['hard'] = [k for k,v in task_scores.items()
         if len(v) >= 2 and majority_of_bool_list(v) is False]
+    return task_score_groups
+    
+if __name__ == '__main__':
+    task_score_groups = get_task_score_groups('training')
     print({k:len(v) for k,v in task_score_groups.items()})
     # print(task_score_groups)
     

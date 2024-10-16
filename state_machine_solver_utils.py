@@ -1,6 +1,8 @@
 import re
 import subprocess
 
+from llm_utils import extract_code
+
 
 def extract_and_run_mapping_code(response, task_id: str, dataset: str):
     code = extract_code(response)
@@ -11,15 +13,6 @@ def extract_and_run_mapping_code(response, task_id: str, dataset: str):
 def extract_and_run_lens_code(response, task):
     pass
 
-def extract_code(assistant_reply):
-    code_blocks = re.findall(r'```(?:python)?\n(.*?)```', assistant_reply, re.DOTALL)
-    if code_blocks:
-        code = '\n'.join(code_blocks)
-        return code
-    else:
-        return None
-
-
 def run_code_read_outputs_with_timeout(task_id, dataset, code, timeout_seconds: int):
     proc = subprocess.Popen(['python', 'state_machine_solver_code_runner.py', task_id, dataset], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     try:
@@ -27,5 +20,4 @@ def run_code_read_outputs_with_timeout(task_id, dataset, code, timeout_seconds: 
     except subprocess.TimeoutExpired:
         proc.kill()
         outs, errs = proc.communicate()
-
     return outs.decode()

@@ -3,6 +3,7 @@ import traceback
 
 import numpy as np
 
+from grid_utils import grid_is_correct
 from task_utils import read_task
 
 class CodeRunner:
@@ -82,18 +83,11 @@ class CodeRunner:
             return None, pred_grid_for_tests
 
 
-def grid_is_correct(pred_grid):
-    try:
-        t = np.array(pred_grid)
-        return len(t.shape) == 2
-    except:
-        return False
-
 if __name__ == "__main__":
     task_id_ = str(sys.argv[1])
     dataset_ = str(sys.argv[2])
     contents = []
-    while True:
+    while True: # i.e., while EOFError has not encountered (where it is sent?)
         try:
             contents.append(input())
         except EOFError:

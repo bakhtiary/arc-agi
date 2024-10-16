@@ -9,13 +9,11 @@ import numpy as np
 import requests
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-from image_utils import make_image_base64, make_all_images_base64
+from grid_utils import AKGrid, AKGridTuple, grid_is_correct, grid_list2tuple, grid_tuple2list
+from llm_utils import add_all_in_one_images_to_content, add_content_to_messages, add_text_to_content, extract_code, save_messages
 from task_utils import read_task
 
 # litellm.set_verbose = True
-
-AKGrid = list[list[int]]
-AKGridTuple = tuple[tuple[tuple[int]]]
 
 NUM_BEAMS=100
 MAX_ATTEMPTS = 3
@@ -39,7 +37,7 @@ def beam_solver_internal(task_id, dataset, log_dir, num_beams, msg):
     print(f'Solving {task_id} [{msg}]')
     for beam_i in range(num_beams):
         log_file = log_dir / task_id / f'{beam_i+1}.json'
-        result = proto_state_machine_solver(task_id, dataset, log_file)
+        result = implicit_state_machine_solver_func(task_id, dataset, log_file)
         if result is not None:
             results.append(result)
     if results:
@@ -58,34 +56,8 @@ def beam_solver_internal(task_id, dataset, log_dir, num_beams, msg):
         fake_final_results = [[[1]],[[1]]]
         return task_id, dataset, log_dir, fake_final_results
 
-def messages_to_md(messages):
-    md = ''
-    for message_i, message in enumerate(messages, 1):
-        role, content = message['role'], message['content']
-        md += f'# {message_i} - {role}\n'
-        if isinstance(content, str):
-            md += f'{content}\n'
-        else:
-            for ci, c in enumerate(content, 1):
-                md += f'## {ci}\n'
-                if c['type'] == 'image_url':
-                    md += f'[image]\n'
-                elif c['type'] == 'text':
-                    md += f'{c["text"]}\n'
 
-        md += '\n'
-    return md
-
-
-def save_messages(messages, logfile):
-    with open(logfile, "w") as fp:
-        json.dump(messages, fp, indent=4)
-
-    with open(str(logfile) + ".md", "w") as fp:
-        fp.write(messages_to_md(messages))
-
-
-def proto_state_machine_solver(task_id, dataset, log_file: Path, max_attempts=MAX_ATTEMPTS) -> list[AKGrid]:
+def implicit_state_machine_solver_func(task_id, dataset, log_file: Path, max_attempts=MAX_ATTEMPTS) -> list[AKGrid]:
     task = read_task(task_id, dataset)
 
     messages = []
@@ -112,47 +84,6 @@ def proto_state_machine_solver(task_id, dataset, log_file: Path, max_attempts=MA
 retry_exceptions = (
     Exception,  # Replace with specific exceptions if litellm defines any
 )
-
-
-def add_content_to_messages(messages, role, content):
-    assert isinstance(content, list) or isinstance(content, str)
-    if isinstance(content, str):
-        content_str = content
-        content = []
-        add_text_to_content(content, content_str)
-
-    messages.append({
-        'role': role,
-        'content': content
-    })
-
-
-def add_all_images_to_content(content, all_inputs):
-    base64_img = make_all_images_base64(all_inputs)
-    content.append({
-        'type': 'image_url',
-        'image_url': {
-            'url': f'data:image/jpeg;base64,{base64_img}'
-        }
-    })
-
-
-def add_image_to_content(content, grid):
-    base64_img = make_image_base64(grid)
-    content.append({
-        'type': 'image_url',
-        'image_url': {
-            'url': f'data:image/jpeg;base64,{base64_img}'
-        }
-    })
-
-
-def add_text_to_content(content, text):
-    content.append({
-        'type': 'text',
-        'text': text
-    })
-
 
 @retry(
     retry=retry_if_exception_type(retry_exceptions),
@@ -189,7 +120,7 @@ def chat_with_llm(messages, llm_model='llama'):
         response = litellm.completion(
             messages=messages,
             stream=False,
-            model=llm_mode,
+            model=llm_model,
             max_tokens=4096,
             temperature=0,
         )
@@ -198,22 +129,13 @@ def chat_with_llm(messages, llm_model='llama'):
     return assistant_reply
 
 
-def extract_code(assistant_reply):
-    code_blocks = re.findall(r'```(?:python)?\n(.*?)```', assistant_reply, re.DOTALL)
-    if code_blocks:
-        code = '\n'.join(code_blocks)
-        return code
-    else:
-        return None
-
-
 def setup_to_analyze_problem(messages, task):
     content = []
     add_text_to_content(content, ('Can you analyze the following pair of images and find the '
         'input/output relationship between them? In each row, the first is the input and the second is the output:'))
     # add_image_to_content(content, task['train'][0]['input'])
     # add_image_to_content(content, task['train'][0]['output'])
-    add_all_images_to_content(content, task['train'])
+    add_all_in_one_images_to_content(content, task['train'])
     add_content_to_messages(messages, 'user', content)
 
 
@@ -233,14 +155,6 @@ def send_short_message(messages, text):
     add_content_to_messages(messages, 'user', text)
     assistant_reply = chat_with_llm(messages)
     return assistant_reply
-
-
-def grid_is_correct(pred_grid):
-    try:
-        t = np.array(pred_grid)
-        return len(t.shape) == 2
-    except:
-        return False
 
 
 def verify_code(code: str, task: dict): # TODO run task in another thread or process for a limited amount of time
@@ -308,12 +222,4 @@ def verify_code(code: str, task: dict): # TODO run task in another thread or pro
                 return err_content, pred_grid_for_tests
 
         return None, pred_grid_for_tests
-
-
-def grid_list2tuple(grid: AKGrid) -> AKGridTuple:
-    return tuple(tuple(row) for row in grid)
-
-
-def grid_tuple2list(grid: AKGridTuple) -> AKGrid:
-    return list(list(row) for row in grid)
 
