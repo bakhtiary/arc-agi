@@ -20,14 +20,14 @@ def score_detailed(task_id, dataset, solutions):
     
     return score / len(test_input_grids)
 
-def experiment(solver, task_ids, log_dir, dataset, pool_size=5):
+def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
     log_dir.mkdir(parents=True, exist_ok=True)
     
     # Async model is cooporative multitasking with no preemption
     with open(f'{log_dir}/results.txt', 'a') as fout:
         def _task_done(result):
             list_of_results.append(result)
-            log_dir, dataset, task_id, solutions = result
+            task_id, dataset, log_dir, solutions = result
             score = score_detailed(task_id, dataset, solutions)
             print(f"Task done: {dataset=} {task_id=}, {score=}")
             fout.write(f"Task done: {dataset=} {task_id=}, {score=}\n")

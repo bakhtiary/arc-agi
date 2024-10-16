@@ -14,14 +14,14 @@ class StateMachineSolver:
         self.state_machine_class = state_machine_class
         self.llm_wrapper = llm_wrapper
 
-    def __call__(self, task_id, dataset, num_beams, log_dir, msg):
+    def __call__(self, task_id, dataset, log_dir, num_beams, msg):
         task = read_task(task_id, dataset)
         (log_dir / task_id).mkdir(parents=True, exist_ok=True)
         results: list[list[AKGrid]] = []
         print(f'Solving {task_id} [{msg}]')
         log_file = log_dir / task_id / f'{1}.json'
 
-        cur_state_machine: SimpleLensStateMachine = self.state_machine_class(dataset, task_id)
+        cur_state_machine: SimpleLensStateMachine = self.state_machine_class(task_id, dataset)
         cur_state_name = cur_state_machine.start_state
         messages = []
         add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')

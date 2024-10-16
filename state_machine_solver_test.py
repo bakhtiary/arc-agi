@@ -1,3 +1,5 @@
+# Run test with ```.venv/bin/python -m unittest state_machine_solver_test.py -v```
+
 from datetime import datetime
 import unittest
 from pathlib import Path
@@ -25,4 +27,4 @@ def solve(input_grid):
 ```     
         
         """)
-        self.sms.__call__("c8f0f002", "training", 5, LOG_DIR, "hassan")
+        self.sms.__call__("c8f0f002", "training", LOG_DIR, 5, "hassan")

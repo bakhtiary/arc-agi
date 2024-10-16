@@ -14,7 +14,7 @@ from state_machine_solver_utils import extract_and_run_mapping_code, extract_and
 
 
 class SimpleLensStateMachine:
-    def __init__(self, dataset, task_id):
+    def __init__(self, task_id, dataset):
         self.start_state = "entry_point"
         self.states = {}
         self.dataset = dataset
@@ -71,5 +71,5 @@ class SimpleLensStateMachine:
         self.run_results.append(extract_and_run_lens_code(response))
 
     def extract_and_run_mapping_code_works(self, response):
-        self.run_results.append(extract_and_run_mapping_code(response, self.dataset, self.task_id))
+        self.run_results.append(extract_and_run_mapping_code(response, self.task_id, self.dataset))
 

@@ -1,3 +1,5 @@
+# Run test with ```.venv/bin/python -m unittest state_machine_solver_utils_test.py -v```
+    
 import unittest
 
 from state_machine_solver_utils import extract_and_run_mapping_code
@@ -16,6 +18,6 @@ def solve(input_grid):
 
 some more random text        
 """
-        return_value = extract_and_run_mapping_code(response, dataset="training", task_id="e8593010")
+        return_value = extract_and_run_mapping_code(response, task_id="e8593010", dataset="training")
 
         assert "Please take your time to think about the problem and then" in return_value

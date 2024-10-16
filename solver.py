@@ -23,9 +23,9 @@ LLM_NUM_RETRIES = 2
 LLM_MODEL='gpt-4o'
 
 
-def beam_solve(task_id, dataset, num_beams, log_dir, msg):
+def beam_solver(task_id, dataset, log_dir, num_beams, msg):
     try:
-        return do_beam_solve(task_id, dataset, num_beams, log_dir, msg)
+        return beam_solver_internal(task_id, dataset, log_dir, num_beams, msg)
     except Exception as e:
         error_msg = traceback.format_exc()
         e = Exception(error_msg)
@@ -33,13 +33,13 @@ def beam_solve(task_id, dataset, num_beams, log_dir, msg):
         raise e
 
 
-def do_beam_solve(task_id, dataset, num_beams, log_dir, msg):
+def beam_solver_internal(task_id, dataset, log_dir, num_beams, msg):
     (log_dir / task_id).mkdir(parents=True, exist_ok=True)
     results: list[list[AKGrid]] = []
     print(f'Solving {task_id} [{msg}]')
     for beam_i in range(num_beams):
         log_file = log_dir / task_id / f'{beam_i+1}.json'
-        result = solve(task_id, dataset, log_file)
+        result = proto_state_machine_solver(task_id, dataset, log_file)
         if result is not None:
             results.append(result)
     if results:
@@ -47,16 +47,16 @@ def do_beam_solve(task_id, dataset, num_beams, log_dir, msg):
         for test_i in range(len(results[0])):
             tupled_results = [grid_list2tuple(result[test_i]) for result in results]
             counts = Counter(tupled_results)
-            # return log_dir, dataset, task_id, results[0]
+            # return task_id, dataset, log_dir, results[0]
             final_results: list[tuple[AKGridTuple, int]] = counts.most_common(2)
             if len(final_results) == 1:
                 final_results = final_results * 2
             final_results: list[AKGrid] = [grid_tuple2list(e[0]) for e in final_results]
             final_results_all.append(final_results)
-        return log_dir, dataset, task_id, final_results
+        return task_id, dataset, log_dir, final_results
     else:
         fake_final_results = [[[1]],[[1]]]
-        return log_dir, dataset, task_id, fake_final_results
+        return task_id, dataset, log_dir, fake_final_results
 
 def messages_to_md(messages):
     md = ''
@@ -85,7 +85,7 @@ def save_messages(messages, logfile):
         fp.write(messages_to_md(messages))
 
 
-def solve(task_id, dataset, log_file: Path, max_attempts=MAX_ATTEMPTS) -> list[AKGrid]:
+def proto_state_machine_solver(task_id, dataset, log_file: Path, max_attempts=MAX_ATTEMPTS) -> list[AKGrid]:
     task = read_task(task_id, dataset)
 
     messages = []

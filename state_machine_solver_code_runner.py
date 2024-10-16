@@ -5,12 +5,12 @@ import numpy as np
 
 from task_utils import read_task
 
-class Runner:
+class CodeRunner:
 
     def __init__(self):
         self.messages = []
 
-    def start_running(self, dataset, task_id, code):
+    def start_running(self, task_id, dataset, code):
         task = read_task(task_id, dataset)
         self.run_code(code, task)
         return "\n".join(self.messages)
@@ -90,8 +90,8 @@ def grid_is_correct(pred_grid):
         return False
 
 if __name__ == "__main__":
-    dataset_ = str(sys.argv[1])
-    task_id_ = str(sys.argv[2])
+    task_id_ = str(sys.argv[1])
+    dataset_ = str(sys.argv[2])
     contents = []
     while True:
         try:
@@ -101,5 +101,5 @@ if __name__ == "__main__":
 
     code_ = "\n".join(contents)
 
-    runner = Runner()
-    runner.start_running(dataset_, task_id_, code_)
+    code_runner = CodeRunner()
+    code_runner.start_running(task_id_, dataset_, code_)

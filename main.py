@@ -8,13 +8,12 @@ from datetime import datetime
 from pathlib import Path
 import warnings
 
-from simple_lens import SimpleLensStateMachine
-from solver_machine_solver import StateMachineSolver
+from simple_lens_state_machine import SimpleLensStateMachine
+from state_machine_solver import StateMachineSolver
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
 
 from task_utils import get_tasks
-from solver import beam_solve
 from experimenter import experiment
 
 
@@ -22,7 +21,7 @@ LOG_DIR = Path('log') / datetime.now().strftime('%Y%m%d-%H%M%S')
 
 def crappy_solve(task_id, dataset, num_beams, log_dir):
     print('crap')
-    return log_dir, dataset, task_id, []
+    return task_id, dataset, log_dir, []
 
 if __name__ == "__main__":
     dataset = 'training'
@@ -31,8 +30,7 @@ if __name__ == "__main__":
     task_ids = get_tasks(dataset)[0:10]
 
     state_machine_solver = StateMachineSolver(SimpleLensStateMachine())
-
-    experiment(beam_solve, task_ids, LOG_DIR, dataset=dataset, pool_size=10)
-    experiment(state_machine_solver, task_ids, LOG_DIR, dataset=dataset, pool_size=10)
+    
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=10)
 
 

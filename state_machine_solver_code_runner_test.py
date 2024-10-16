@@ -1,6 +1,8 @@
+# Run test with ```.venv/bin/python -m unittest state_machine_solver_code_runner_test.py -v```
+
 import unittest
 
-from state_machine_solver_code_runner import Runner
+from state_machine_solver_code_runner import CodeRunner
 
 
 class StateMachineSolverCodeRunnerTest(unittest.TestCase):
@@ -10,6 +12,6 @@ class StateMachineSolverCodeRunnerTest(unittest.TestCase):
 def solve(input_grid):
     return [[5, 5, 5, 5, 3, 5, 5, 5, 3, 5], [1, 1, 5, 5, 5, 5, 5, 5, 5, 5], [1, 5, 5, 5, 5, 5, 1, 1, 5, 2], [5, 5, 3, 5, 5, 5, 5, 1, 5, 2], [5, 5, 5, 5, 2, 2, 5, 5, 5, 5], [2, 5, 3, 5, 5, 5, 5, 3, 5, 2], [2, 5, 5, 5, 2, 2, 5, 5, 5, 2], [5, 5, 5, 5, 5, 5, 5, 5, 5, 5], [5, 5, 5, 5, 5, 5, 5, 5, 5, 2], [3, 5, 5, 5, 5, 5, 5, 3, 5, 2]]
 """
-        return_value = Runner().start_running(dataset="training", task_id="e8593010", code=code)
+        return_value = CodeRunner().start_running(task_id="e8593010", dataset="training", code=code)
 
         assert "Please take your time to think about" in return_value
