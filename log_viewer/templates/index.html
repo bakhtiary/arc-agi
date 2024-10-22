@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Log Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+    <style>
+        pre code {
+            background-color: #f5f5f5;
+            padding: 10px;
+            display: block;
+            overflow-x: auto;
+        }
+
+        img {
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    Root Directory:
+    <select id="root-dir" name="root-dir">
+        {% for dir in root_dirs %}
+            <option value="{{ dir }}" {% if dir == selected_root_dir %}selected{% endif %}>{{ dir }}</option>
+        {% endfor %}
+    </select>
+
+    Log:
+    <select id="log-ids" name="log-ids">
+        {% for log_id in log_ids %}
+            <option value="{{ log_id }}" {% if log_id == selected_log_id %}selected{% endif %}>{{ log_id }}</option>
+        {% endfor %}
+    </select>
+
+    Task:
+    <select id="task-ids" name="task-ids">
+        {% for task_id in task_ids %}
+            <option value="{{ task_id }}" {% if task_id == selected_task_id %}selected{% endif %}>{{ task_id }}</option>
+        {% endfor %}
+    </select>
+
+    MD File:
+    <select id="md-files" name="md-files">
+        {% for md_file in md_files %}
+            <option value="{{ md_file }}" {% if md_file == selected_md_file %}selected{% endif %}>{{ md_file }}</option>
+        {% endfor %}
+    </select>
+    <hr>
+    <div id="content"><!-- Content will be loaded here --></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>
+        function updateHash() {
+            var rootDir = encodeURIComponent(document.getElementById('root-dir').value);
+            var logId = encodeURIComponent(document.getElementById('log-ids').value);
+            var taskId = encodeURIComponent(document.getElementById('task-ids').value);
+            var mdFileId = encodeURIComponent(document.getElementById('md-files').value);
+            window.location.hash = rootDir + '/' + logId + '/' + taskId + '/' + mdFileId;
+        }
+
+        function parseHash() {
+            var hash = window.location.hash.substring(1);
+            var parts = hash.split('/');
+            return {
+                rootDir: parts[0] ? decodeURIComponent(parts[0]) : null,
+                logId: parts[1] ? decodeURIComponent(parts[1]) : null,
+                taskId: parts[2] ? decodeURIComponent(parts[2]) : null,
+                mdFileId: parts[3] ? decodeURIComponent(parts[3]) : null
+            };
+        }
+
+        function updateLogs(rootDir, selectedLogId, selectedTaskId, selectedMdFileId) {
+            fetch('/logs/' + encodeURIComponent(rootDir))
+                .then(response => response.json())
+                .then(data => {
+                    var logSelect = document.getElementById('log-ids');
+                    logSelect.innerHTML = '';
+                    data.logs.forEach(function(log) {
+                        var option = document.createElement('option');
+                        option.value = log;
+                        option.text = log;
+                        logSelect.add(option);
+                    });
+                    if (selectedLogId && data.logs.includes(selectedLogId)) {
+                        logSelect.value = selectedLogId;
+                    } else if (data.logs.length > 0) {
+                        logSelect.selectedIndex = 0;
+                        selectedLogId = logSelect.value;
+                    } else {
+                        logSelect.innerHTML = '';
+                        document.getElementById('task-ids').innerHTML = '';
+                        document.getElementById('md-files').innerHTML = '';
+                        document.getElementById('content').innerHTML = '';
+                        updateHash();
+                        return;
+                    }
+                    updateTasks(rootDir, selectedLogId, selectedTaskId, selectedMdFileId);
+                })
+                .catch(error => {
+                    console.error('Error fetching logs:', error);
+                });
+        }
+
+        function updateTasks(rootDir, logId, selectedTaskId, selectedMdFileId) {
+            fetch('/tasks/' + encodeURIComponent(rootDir) + '/' + encodeURIComponent(logId))
+                .then(response => response.json())
+                .then(data => {
+                    var taskSelect = document.getElementById('task-ids');
+                    taskSelect.innerHTML = '';
+                    data.tasks.forEach(function(task) {
+                        var option = document.createElement('option');
+                        option.value = task;
+                        option.text = task;
+                        taskSelect.add(option);
+                    });
+                    if (selectedTaskId && data.tasks.includes(selectedTaskId)) {
+                        taskSelect.value = selectedTaskId;
+                    } else if (data.tasks.length > 0) {
+                        taskSelect.selectedIndex = 0;
+                        selectedTaskId = taskSelect.value;
+                    } else {
+                        taskSelect.innerHTML = '';
+                        document.getElementById('md-files').innerHTML = '';
+                        document.getElementById('content').innerHTML = '';
+                        updateHash();
+                        return;
+                    }
+                    updateMdFiles(rootDir, logId, selectedTaskId, selectedMdFileId);
+                })
+                .catch(error => {
+                    console.error('Error fetching tasks:', error);
+                });
+        }
+
+        function updateMdFiles(rootDir, logId, taskId, selectedMdFileId) {
+            fetch('/md_files/' + encodeURIComponent(rootDir) + '/' + encodeURIComponent(logId) + '/' + encodeURIComponent(taskId))
+                .then(response => response.json())
+                .then(data => {
+                    var mdFileSelect = document.getElementById('md-files');
+                    mdFileSelect.innerHTML = '';
+                    data.md_files.forEach(function(mdFile) {
+                        var option = document.createElement('option');
+                        option.value = mdFile;
+                        option.text = mdFile;
+                        mdFileSelect.add(option);
+                    });
+                    if (selectedMdFileId && data.md_files.includes(selectedMdFileId)) {
+                        mdFileSelect.value = selectedMdFileId;
+                    } else if (data.md_files.length > 0) {
+                        mdFileSelect.selectedIndex = 0;
+                        selectedMdFileId = mdFileSelect.value;
+                    } else {
+                        mdFileSelect.innerHTML = '';
+                        document.getElementById('content').innerHTML = '';
+                        updateHash();
+                        return;
+                    }
+                    loadContent(rootDir, logId, taskId, selectedMdFileId);
+                    updateHash();
+                })
+                .catch(error => {
+                    console.error('Error fetching md files:', error);
+                });
+        }
+
+        function loadContent(rootDir, logId, taskId, mdFileId) {
+            fetch('/content/' + encodeURIComponent(rootDir) + '/' + encodeURIComponent(logId) + '/' + encodeURIComponent(taskId) + '/' + encodeURIComponent(mdFileId))
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('content').innerHTML = data;
+                    document.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading content:', error);
+                });
+        }
+
+        document.getElementById('root-dir').addEventListener('change', function() {
+            var rootDir = this.value;
+            var hashState = parseHash();
+            updateLogs(rootDir, null, hashState.taskId, null);
+        });
+
+        document.getElementById('log-ids').addEventListener('change', function() {
+            var rootDir = document.getElementById('root-dir').value;
+            var logId = this.value;
+            var hashState = parseHash();
+            updateTasks(rootDir, logId, hashState.taskId, null);
+        });
+
+        document.getElementById('task-ids').addEventListener('change', function() {
+            var rootDir = document.getElementById('root-dir').value;
+            var logId = document.getElementById('log-ids').value;
+            var taskId = this.value;
+            var hashState = parseHash();
+            updateMdFiles(rootDir, logId, taskId, null);
+        });
+
+        document.getElementById('md-files').addEventListener('change', function() {
+            var rootDir = document.getElementById('root-dir').value;
+            var logId = document.getElementById('log-ids').value;
+            var taskId = document.getElementById('task-ids').value;
+            var mdFileId = this.value;
+            loadContent(rootDir, logId, taskId, mdFileId);
+            updateHash();
+        });
+
+        window.addEventListener('load', function() {
+            var hashState = parseHash();
+            var rootDir = hashState.rootDir || document.getElementById('root-dir').value;
+            document.getElementById('root-dir').value = rootDir;
+            updateLogs(rootDir, hashState.logId, hashState.taskId, hashState.mdFileId);
+        });
+
+        window.addEventListener('hashchange', function() {
+            var hashState = parseHash();
+            var rootDir = hashState.rootDir || document.getElementById('root-dir').value;
+            document.getElementById('root-dir').value = rootDir;
+            updateLogs(rootDir, hashState.logId, hashState.taskId, hashState.mdFileId);
+        });
+    </script>
+        
+</body>
+</html>
