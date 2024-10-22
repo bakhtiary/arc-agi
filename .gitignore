@@ -1,5 +1,7 @@
 .idea/
+.vscode/
 log/
+logs/
 
 # Byte-compiled files
 __pycache__/
@@ -10,3 +12,5 @@ __pycache__/
 venv/
 .env/
 .venv
+
+tmp/

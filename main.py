@@ -19,7 +19,7 @@ from task_utils import get_task_mix, get_tasks
 from experimenter import experiment
 
 
-LOG_DIR = Path('log') / datetime.now().strftime('%Y%m%d-%H%M%S')
+LOG_DIR = Path('logs') / datetime.now().strftime('%Y%m%d-%H%M%S')
 
 def crappy_solve(task_id, dataset, num_beams, log_dir):
     print('crap')
