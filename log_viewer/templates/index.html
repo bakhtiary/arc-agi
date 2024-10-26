@@ -44,6 +44,8 @@
             <option value="{{ md_file }}" {% if md_file == selected_md_file %}selected{% endif %}>{{ md_file }}</option>
         {% endfor %}
     </select>
+
+    Level: <span id="task-level">{{ task_level }}</span>
     <hr>
     <div id="content"><!-- Content will be loaded here --></div>
 
@@ -135,6 +137,8 @@
             fetch('/md_files/' + encodeURIComponent(rootDir) + '/' + encodeURIComponent(logId) + '/' + encodeURIComponent(taskId))
                 .then(response => response.json())
                 .then(data => {
+                    var taskLevel = document.getElementById('task-level');
+                    taskLevel.innerHTML = data.task_level;
                     var mdFileSelect = document.getElementById('md-files');
                     mdFileSelect.innerHTML = '';
                     data.md_files.forEach(function(mdFile) {

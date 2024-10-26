@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import re
 
-def parse_results(dataset):
+def parse_logs(dataset):
     task_scores = defaultdict(list)
     root_dir = 'important-run-logs'
     if dataset == 'both':
@@ -11,7 +11,6 @@ def parse_results(dataset):
     else:
         pattern = rf"Task done: dataset='.*' task_id='([^']*)', score=([0-9.]+)"
 
-    # Walk through all files in the root_dir
     for dir in os.listdir(root_dir):
         file_path = Path(root_dir) / dir / 'results.txt'
         with open(file_path, 'r') as f:
@@ -35,14 +34,18 @@ def majority_of_bool_list(v):
     return num_t > len(v) / 2
     
 def get_task_score_groups(dataset):
-    task_scores = parse_results(dataset)
+    task_scores = parse_logs(dataset)
     task_score_groups = dict()
     task_score_groups['simple'] = [k for k,v in task_scores.items()
         if len(v) >= 2 and majority_of_bool_list(v)]
+    task_score_groups['simple~'] = [k for k,v in task_scores.items()
+        if len(v) == 1 and v[0]]
     task_score_groups['average'] = [k for k,v in task_scores.items()
         if len(v) >= 2 and majority_of_bool_list(v) is None]
     task_score_groups['hard'] = [k for k,v in task_scores.items()
         if len(v) >= 2 and majority_of_bool_list(v) is False]
+    task_score_groups['hard~'] = [k for k,v in task_scores.items()
+        if len(v) == 1 and not v[0]]
     return task_score_groups
     
 if __name__ == '__main__':

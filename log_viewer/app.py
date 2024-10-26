@@ -1,14 +1,32 @@
+from pathlib import Path
 from flask import Flask, render_template, jsonify
 import os
 import markdown
+import sys
+
+sys.path.append(str(Path(__file__).parent.parent))
+
+from calc_logs_statistics import get_task_score_groups
 
 app = Flask(__name__)
+
+task_score_groups = {}
+task_score_groups['training'] = get_task_score_groups('training')
+def get_task_level(dataset, task_id):
+    if dataset not in task_score_groups:
+        return 'n/a'
+    
+    for level,task_ids in task_score_groups[dataset].items():
+        if task_id in task_ids:
+            return level
+    
+    return 'n/a'
 
 @app.route('/')
 def index():
     # Define possible root directories
     root_dirs = ['logs', 'important-run-logs']
-    selected_root_dir = root_dirs[0]  # Default selection
+    selected_root_dir = root_dirs[1]  # Default selection
 
     # Get list of log IDs (folder names under selected root directory)
     root_dir = selected_root_dir
@@ -45,7 +63,8 @@ def index():
         task_ids=task_ids,
         selected_task_id=selected_task_id,
         md_files=md_files,
-        selected_md_file=selected_md_file
+        selected_md_file=selected_md_file,
+        task_level=get_task_level('training', selected_task_id)
     )
 
 @app.route('/logs/<root_dir>')
@@ -79,7 +98,7 @@ def get_md_files(root_dir, log_id, task_id):
         md_files.sort()
     else:
         md_files = []
-    return jsonify({'md_files': md_files})
+    return jsonify({'md_files': md_files, 'task_level': get_task_level('training', task_id)})
 
 @app.route('/content/<root_dir>/<log_id>/<task_id>/<md_file_id>')
 def get_content(root_dir, log_id, task_id, md_file_id):

@@ -10,7 +10,7 @@ import requests
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from grid_utils import AKGrid, AKGridTuple, grid_is_correct, grid_list2tuple, grid_tuple2list
-from llm_utils import add_all_in_one_images_to_content, add_content_to_messages, add_text_to_content, extract_code, save_messages
+from llm_utils import add_all_in_one_images_to_content, add_content_to_messages, add_image_to_content, add_text_to_content, extract_code, save_messages
 from task_utils import read_task
 
 # litellm.set_verbose = True
