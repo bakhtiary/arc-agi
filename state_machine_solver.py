@@ -1,4 +1,5 @@
-from llm_utils import add_all_in_one_images_to_content, add_content_to_messages, add_text_to_content, save_messages
+from llm_utils import add_all_in_one_images_to_content, add_content_to_messages, add_text_to_content
+from log_utils import create_empty_log, save_log
 from simple_lens_state_machine import SimpleLensStateMachine
 from task_utils import read_task
 
@@ -12,17 +13,21 @@ class StateMachineSolver:
         self.state_machine_class = state_machine_class
         self.llm_wrapper = llm_wrapper
 
-    def __call__(self, task_id, dataset, log_dir, num_beams, msg):
+    def __call__(self, task_id, dataset, log_dir):
         task = read_task(task_id, dataset)
         (log_dir / task_id).mkdir(parents=True, exist_ok=True)
-        results: list[list[AKGrid]] = []
-        print(f'Solving {task_id} [{msg}]')
         log_file = log_dir / task_id / f'{1}.json'
+        create_empty_log(log_file)
+        results: list[list[AKGrid]] = []
+        print(f'Solving {task_id}: http://127.0.0.1:5000/#{log_dir.parent.name}/{log_dir.name}/{task_id}/{1}.full.md')
+        
 
         cur_state_machine: SimpleLensStateMachine = self.state_machine_class(task_id, dataset)
         cur_state_name = cur_state_machine.start_state
         messages = []
         add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')
+        save_log(messages, log_file)
+
         while cur_state_name:
             print(cur_state_name)
             content = []
@@ -54,7 +59,7 @@ class StateMachineSolver:
             else:
                 cur_state_name = next_state_name(response)
 
-            save_messages(messages, log_file)
+            save_log(messages, log_file)
 
     def chat_with_llm(self, messages):
         response = self.llm_wrapper.completion(

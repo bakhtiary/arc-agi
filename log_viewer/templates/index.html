@@ -223,6 +223,11 @@
             document.getElementById('root-dir').value = rootDir;
             updateLogs(rootDir, hashState.logId, hashState.taskId, hashState.mdFileId);
         });
+
+        window.setInterval(function() {
+            var hashState = parseHash();
+            loadContent(hashState.rootDir, hashState.logId, hashState.taskId, hashState.mdFileId);
+        }, 10000)
     </script>
         
 </body>

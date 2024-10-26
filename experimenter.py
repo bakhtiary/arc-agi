@@ -31,7 +31,6 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
         try:
             solver(*args)
         except Exception as e:
-            print('hi')
             error_msg = traceback.format_exc()
             e = Exception(error_msg)
             e.ak_data = {'task_id': args[0], 'dataset': args[1]}
@@ -56,8 +55,7 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
                 fout.write(f'Task error: {raised_exception}\n')
 
         num_tasks = len(task_ids)
-        all_job_args = [(task_id, dataset, log_dir, 1, f'{task_i}/{num_tasks}')
-            for task_i, task_id in enumerate(task_ids, 1)]
+        all_job_args = [(task_id, dataset, log_dir) for task_id in task_ids]
         
         if pool_size == -1:
             for job_args in all_job_args:
