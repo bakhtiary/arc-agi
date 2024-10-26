@@ -30,7 +30,7 @@ class SimpleLensStateMachine:
         self.states["is_concrete"] = dict(
             message_to_send=[lambda: "is the hypothesis that you just described, concrete enough "
                 "to write a code that maps the input to the output? answer with a simple yes or no, nothing else"],
-            next_state= lambda response: "get_mapping_code" if "yes" in response else "get_lens_code"
+            next_state= lambda response: "get_mapping_code" if "yes" in response.lower() else "get_lens_code"
         )
         self.states["get_mapping_code"] = dict(
             message_to_send=[lambda :"please generate the mapping code for this hypothesis"],

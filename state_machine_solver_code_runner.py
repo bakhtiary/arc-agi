@@ -1,8 +1,6 @@
 import sys
 import traceback
 
-import numpy as np
-
 from grid_utils import grid_is_correct
 from task_utils import read_task
 
