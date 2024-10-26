@@ -12,12 +12,13 @@ import litellm
 
 from simple_lens_state_machine import SimpleLensStateMachine
 from state_machine_solver import StateMachineSolver
+from dotenv import load_dotenv
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
 
-from task_utils import get_task_mix, get_tasks
 from experimenter import experiment
 
+load_dotenv(".secrets")
 
 LOG_DIR = Path('logs') / datetime.now().strftime('%Y%m%d-%H%M%S')
 

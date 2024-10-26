@@ -55,7 +55,7 @@ class SimpleLensStateMachine:
             next_state=None
         )
         self.states["mapping_code_failed"] = dict(
-            message_to_send=lambda: [f"We ran the given code on the following inputs and got "
+            message_to_send=[lambda: f"We ran the given code on the following inputs and got "
                 f"{self.run_results[-1]}\ntry to fix this error and try again"],
             do_work=self.mapping_code_failed_work,
             next_state= lambda response: "success" if self.extract_and_run_mapping_code_works(response) else "mapping_code_failed" if self.num_failed < self.max_num_failed else "total_failure"
