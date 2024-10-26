@@ -38,12 +38,14 @@ def get_task_score_groups(dataset):
     task_score_groups = dict()
     task_score_groups['simple'] = [k for k,v in task_scores.items()
         if len(v) >= 2 and majority_of_bool_list(v)]
-    task_score_groups['simple~'] = [k for k,v in task_scores.items()
+    # solved only in one run, and not present in the other
+    task_score_groups['simple~'] = [k for k,v in task_scores.items() 
         if len(v) == 1 and v[0]]
     task_score_groups['average'] = [k for k,v in task_scores.items()
         if len(v) >= 2 and majority_of_bool_list(v) is None]
     task_score_groups['hard'] = [k for k,v in task_scores.items()
         if len(v) >= 2 and majority_of_bool_list(v) is False]
+    # not solved only in one run, and not present in the other
     task_score_groups['hard~'] = [k for k,v in task_scores.items()
         if len(v) == 1 and not v[0]]
     return task_score_groups
