@@ -13,7 +13,7 @@ class StateMachineSolver:
         self.state_machine_class = state_machine_class
         self.llm_wrapper = llm_wrapper
 
-    def __call__(self, task_id, dataset, log_dir):
+    def __call__(self, task_id, dataset, log_dir): # --> task_id, dataset, log_file, solutions
         task = read_task(task_id, dataset)
         (log_dir / task_id).mkdir(parents=True, exist_ok=True)
         log_file = log_dir / task_id / f'{1}.json'
@@ -60,6 +60,8 @@ class StateMachineSolver:
                 cur_state_name = next_state_name(response)
 
             save_log(messages, log_file)
+
+        # results = ...
 
     def chat_with_llm(self, messages):
         response = self.llm_wrapper.completion(
