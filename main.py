@@ -28,7 +28,8 @@ def crappy_solve(task_id, dataset, num_beams, log_dir):
 
 if __name__ == "__main__":
     dataset = 'training'
-    # task_ids = ["c8f0f002"]
+    # task_ids = ["c8f0f002"] # very easy
+    # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
     # task_ids = get_tasks(dataset)[0:10]
     # task_ids = get_task_mix('training', simple=10, hard=10)
@@ -41,10 +42,9 @@ if __name__ == "__main__":
               '67385a82', '36d67576', '6d0160f0', '4938f0c2', '746b3537', 'dc433765', '8efcae92', '1e32b0e9',
               '6430c8c4', '5521c0d9', 'a64e4611', 'c9e6f938', '9ecd008a', '1f85a75f', '3de23699', '54d9e175',
               '7ddcd7ec', 'b27ca6d3', '6aa20dc0', 'b527c5c6', '25ff71a9', '6e02f1e3', 'c1d99e64', '97a05b5b']
-    task_ids = ['ce22a75a']
 
     state_machine_solver = StateMachineSolver(SimpleLensStateMachine)
     
-    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=1)
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=16)
 
 

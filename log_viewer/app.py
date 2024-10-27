@@ -6,12 +6,10 @@ import sys
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from calc_logs_statistics import get_task_score_groups
 
 app = Flask(__name__)
 
 task_score_groups = {}
-task_score_groups['training'] = get_task_score_groups('training')
 def get_task_level(dataset, task_id):
     if dataset not in task_score_groups:
         return 'n/a'

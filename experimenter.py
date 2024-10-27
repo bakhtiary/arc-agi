@@ -71,9 +71,9 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
                 _task_error(e)
     else:
         with Pool(pool_size) as p:
-            p.apply_async(
+            p.map_async(
                 solver_wrapper,
-                args=all_job_args,
+                iterable=all_job_args,
                 callback=_task_done,
                 error_callback=_task_error
             )
