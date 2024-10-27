@@ -1,38 +1,30 @@
 import json
 
 def create_empty_log(log_file):
-    save_log({}, log_file)
+    save_log("", log_file)
 
-def save_log(messages, log_file):
-    with open(log_file, 'w') as fp:
-        json.dump(messages, fp, indent=4)
+def save_log(log_portion, log_file):
+    with open(log_file, 'a+') as fp:
+        fp.write(log_portion)
 
-    with open(str(log_file).removesuffix('.json') + '.md', 'w') as fp:
-        fp.write(messages_to_md(messages, prune_images=True))
-
-    with open(str(log_file).removesuffix('.json') + '.full.md', 'w') as fp:
-        fp.write(messages_to_md(messages, prune_images=False))
-
-
-def messages_to_md(messages, prune_images):
+def message_to_md(message, prune_images):
     md = ''
-    for message_i, message in enumerate(messages, 1):
-        role, content = message['role'], message['content']
-        md += f'# {message_i} - {role}\n'
-        if isinstance(content, str):
-            md += f'{content}\n'
-        else:
-            for ci, c in enumerate(content, 1):
-                md += f'## {ci}\n'
-                if c['type'] == 'image_url':
-                    if prune_images:
-                        md += f'[image]\n'
-                    else:
-                        md += f'<img src="{c["image_url"]["url"]}" />\n'
-                elif c['type'] == 'text':
-                    md += f'{c["text"]}\n'
+    role, content = message['role'], message['content']
+    md += f'----\n\n'
+    md += f'# {role}:\n\n'
+    if isinstance(content, str):
+        md += f'{content}\n'
+    else:
+        for ci, c in enumerate(content, 1):
+            if c['type'] == 'image_url':
+                if prune_images:
+                    md += f'[image]\n'
+                else:
+                    md += f'<img src="{c["image_url"]["url"]}" />\n'
+            elif c['type'] == 'text':
+                md += f'{c["text"]}\n'
 
-        md += '\n'
+    md += '\n'
     return md
 
 

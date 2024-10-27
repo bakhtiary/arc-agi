@@ -16,7 +16,7 @@ class StateMachineSolver:
     def __call__(self, task_id, dataset, log_dir): # --> task_id, dataset, log_file, solutions
         task = read_task(task_id, dataset)
         (log_dir / task_id).mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / task_id / f'{1}.json'
+        log_file = log_dir / task_id / f'{1}.full.md'
         create_empty_log(log_file)
         results: list[list[AKGrid]] = []
         print(f'Solving {task_id}: http://127.0.0.1:5000/#{log_dir.parent.name}/{log_dir.name}/{task_id}/{1}.full.md')
@@ -25,7 +25,7 @@ class StateMachineSolver:
         cur_state_machine: SimpleLensStateMachine = self.state_machine_class(task_id, dataset)
         cur_state_name = cur_state_machine.start_state
         messages = []
-        add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')
+        add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.',log_file)
 
         while cur_state_name:
             print(cur_state_name)
@@ -43,9 +43,9 @@ class StateMachineSolver:
                         add_all_in_one_images_to_content(content, task['train'])
                     else:
                         add_text_to_content(content, state_message)
-                add_content_to_messages(messages, 'user', content)
+                add_content_to_messages(messages, 'user', content, log_file)
                  
-                self.chat_with_llm(messages)
+                self.chat_with_llm(messages, log_file)
                 response = messages[-1]['content'][0]['text']
 
             if 'do_work' in cur_state:
@@ -58,11 +58,11 @@ class StateMachineSolver:
             else:
                 cur_state_name = next_state_name(response)
 
-            save_log(messages, log_file)
+        save_log(f"state machine finished, result is {cur_state_machine.solution}", log_file)
 
         return task_id, dataset, log_file, cur_state_machine.solution
 
-    def chat_with_llm(self, messages):
+    def chat_with_llm(self, messages, log_file):
         response = self.llm_wrapper.completion(
             messages=messages,
             stream=False,
@@ -72,5 +72,5 @@ class StateMachineSolver:
         )
         # assistant_reply = response
         assistant_reply = response['choices'][0]['message']['content'].strip()
-        add_content_to_messages(messages, 'assistant', assistant_reply)
+        add_content_to_messages(messages, 'assistant', assistant_reply, log_file)
         return assistant_reply

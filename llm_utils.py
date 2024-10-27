@@ -1,19 +1,22 @@
 import json
 import re
 from image_utils import make_all_in_one_images_base64, make_image_base64
+from log_utils import save_log, message_to_md
 
 
-def add_content_to_messages(messages, role, content):
+def add_content_to_messages(messages, role, content, log_file):
     assert isinstance(content, list) or isinstance(content, str)
     if isinstance(content, str):
         content_str = content
         content = []
         add_text_to_content(content, content_str)
 
-    messages.append({
+    message = {
         'role': role,
         'content': content
-    })
+    }
+    messages.append(message)
+    save_log(message_to_md(message, False), log_file)
 
 
 def add_image_to_content(content, grid):
