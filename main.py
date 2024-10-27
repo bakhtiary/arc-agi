@@ -28,10 +28,20 @@ def crappy_solve(task_id, dataset, num_beams, log_dir):
 
 if __name__ == "__main__":
     dataset = 'training'
-    task_ids = ["c8f0f002"]
+    # task_ids = ["c8f0f002"]
     # md analysis by amir --> ff28f65a
     # task_ids = get_tasks(dataset)[0:10]
     # task_ids = get_task_mix('training', simple=10, hard=10)
+    task_ids = ['c8f0f002', '623ea044', 'a2fd1cf0', 'd4a91cb9', 'ce22a75a', '23581191', '913fb3ed', 'b1948b0a',
+                'b6afb2da', '27a28665', '4258a5f9', 'e9afcf9a', 'd23f8c26', '42a50994','ea786f4a', '91714a58', '4be741c5', '50cb2852', '5582e5ca', 'a61f2674', '85c4e7cd', 'd0f5fe59',
+                 'd364b489', '49d1d64f', 'd511f180', '56ff96f3', '6f8cd79b', 'd4469b4b', '5614dbcf', 'aedd82e4',
+                 'c9f8e694', '445eab21', '68b16354', 'bda2d7a6', 'a699fb00', 'a416b8f3', 'bdad9b1f', 'e9614598',
+                 'f25ffba3', '253bf280', '3618c87e', '1cf80156', '2dee498d', 'bb43febb', 'd631b094', 'dc1df850',
+                 'a9f96cdd','72ca375d', '82819916', 'b2862040', '846bdb03', '855e0971', '05269061', '72322fa7', '6d75e8bb',
+              '67385a82', '36d67576', '6d0160f0', '4938f0c2', '746b3537', 'dc433765', '8efcae92', '1e32b0e9',
+              '6430c8c4', '5521c0d9', 'a64e4611', 'c9e6f938', '9ecd008a', '1f85a75f', '3de23699', '54d9e175',
+              '7ddcd7ec', 'b27ca6d3', '6aa20dc0', 'b527c5c6', '25ff71a9', '6e02f1e3', 'c1d99e64', '97a05b5b']
+    task_ids = ['ce22a75a']
 
     state_machine_solver = StateMachineSolver(SimpleLensStateMachine, litellm)
     

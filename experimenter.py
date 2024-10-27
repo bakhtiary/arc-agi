@@ -2,13 +2,15 @@ import time
 from multiprocessing import Pool
 import traceback
 
-from log_utils import add_termination_to_log
+from log_utils import add_termination_to_log, save_log
 from task_utils import read_task
 
 list_of_results = []
 
 
 def score_detailed(task_id, dataset, solutions):
+    if solutions is None:
+        return 0
     task = read_task(task_id, dataset)
     test_input_grids = task['test']
     if isinstance(test_input_grids, dict) and 'input' in test_input_grids:
@@ -44,12 +46,9 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
         list_of_results.append(result)
         task_id, dataset, log_file, solutions = result
         score = score_detailed(task_id, dataset, solutions)
+        save_log(f"score is {score}", log_file)
         print(f"Task done: {dataset=} {task_id=}, {score=}")
-        if solutions is None:
-            add_termination_to_log({'termination': {'reason': 'max-attempts-exceeded'}}, log_file)
-        else:
-            add_termination_to_log({'termination': {'reason': 'sucess-on-train-pairs', 'score': score}}, log_file)
-    
+
     def _task_error(raised_exception):
         assert hasattr(raised_exception, 'ak_data')
         print(f'Task error: {raised_exception} ({raised_exception.ak_data})')

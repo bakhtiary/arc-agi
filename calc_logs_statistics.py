@@ -53,5 +53,5 @@ def get_task_score_groups(dataset):
 if __name__ == '__main__':
     task_score_groups = get_task_score_groups('training')
     print({k:len(v) for k,v in task_score_groups.items()})
-    # print(task_score_groups)
+    print(task_score_groups)
     

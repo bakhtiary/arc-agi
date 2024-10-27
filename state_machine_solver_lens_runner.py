@@ -1,7 +1,6 @@
 import sys
 import traceback
 
-from grid_utils import grid_is_correct
 from task_utils import read_task
 
 class LensRunner:
@@ -17,7 +16,7 @@ class LensRunner:
 
     def add_text_to_content(self, message):
         self.messages.append(message)
-
+        print(message)
 
     def run_code(self, code: str, task: dict):  # TODO run task in another thread or process for a limited amount of time
         err_content = []
