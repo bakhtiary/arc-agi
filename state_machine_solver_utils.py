@@ -6,6 +6,7 @@ from llm_utils import extract_code
 
 def extract_and_run_mapping_code(response, task_id: str, dataset: str):
     code = extract_code(response)
+    # Todo what if code is "none"
     return run_code_read_outputs_with_timeout(task_id, dataset, code.encode(), 10, 'state_machine_solver_code_runner.py')
 
 def extract_and_run_lens_code(response, task_id: str, dataset: str):

@@ -48,7 +48,6 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
         if solutions is None:
             add_termination_to_log({'termination': {'reason': 'max-attempts-exceeded'}}, log_file)
         else:
-            score = score_detailed(task_id, dataset, solutions)            
             add_termination_to_log({'termination': {'reason': 'sucess-on-train-pairs', 'score': score}}, log_file)
     
     def _task_error(raised_exception):

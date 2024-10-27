@@ -61,7 +61,6 @@ class StateMachineSolver:
             save_log(messages, log_file)
 
         return task_id, dataset, log_file, cur_state_machine.solution
-        # results = ...
 
     def chat_with_llm(self, messages):
         response = self.llm_wrapper.completion(
