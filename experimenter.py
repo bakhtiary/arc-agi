@@ -31,7 +31,7 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
     def solver_wrapper(args):
         task_id, dataset, log_dir = args
         try:
-            solver(*args)
+            return solver(*args)
         except Exception as e:
             error_msg = traceback.format_exc()
             e = Exception(error_msg)
@@ -43,6 +43,7 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
     def _task_done(result):
         list_of_results.append(result)
         task_id, dataset, log_file, solutions = result
+        score = score_detailed(task_id, dataset, solutions)
         print(f"Task done: {dataset=} {task_id=}, {score=}")
         if solutions is None:
             add_termination_to_log({'termination': {'reason': 'max-attempts-exceeded'}}, log_file)
@@ -51,7 +52,7 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
             add_termination_to_log({'termination': {'reason': 'sucess-on-train-pairs', 'score': score}}, log_file)
     
     def _task_error(raised_exception):
-        assert hasattr(raised_exception, 'ak_data'):
+        assert hasattr(raised_exception, 'ak_data')
         print(f'Task error: {raised_exception} ({raised_exception.ak_data})')
         add_termination_to_log({'termination': {'reason': 'exception', 'details': raised_exception}}, raised_exception.ak_data['log_file'])
         

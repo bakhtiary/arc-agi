@@ -26,7 +26,6 @@ class StateMachineSolver:
         cur_state_name = cur_state_machine.start_state
         messages = []
         add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')
-        save_log(messages, log_file)
 
         while cur_state_name:
             print(cur_state_name)
@@ -61,6 +60,7 @@ class StateMachineSolver:
 
             save_log(messages, log_file)
 
+        return task_id, dataset, log_file, cur_state_machine.solution
         # results = ...
 
     def chat_with_llm(self, messages):
