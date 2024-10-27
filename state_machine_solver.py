@@ -2,6 +2,7 @@ from llm_utils import add_all_in_one_images_to_content, add_content_to_messages,
 from log_utils import create_empty_log, save_log
 from simple_lens_state_machine import SimpleLensStateMachine
 from task_utils import read_task
+import litellm
 
 AKGrid = list[list[int]]
 AKGridTuple = tuple[tuple[tuple[int]]]
@@ -9,9 +10,8 @@ AKGridTuple = tuple[tuple[tuple[int]]]
 LLM_MODEL='gpt-4o'
 
 class StateMachineSolver:
-    def __init__(self,state_machine_class, llm_wrapper):
+    def __init__(self,state_machine_class):
         self.state_machine_class = state_machine_class
-        self.llm_wrapper = llm_wrapper
 
     def __call__(self, task_id, dataset, log_dir): # --> task_id, dataset, log_file, solutions
         task = read_task(task_id, dataset)
@@ -63,7 +63,7 @@ class StateMachineSolver:
         return task_id, dataset, log_file, cur_state_machine.solution
 
     def chat_with_llm(self, messages, log_file):
-        response = self.llm_wrapper.completion(
+        response = litellm.completion(
             messages=messages,
             stream=False,
             model=LLM_MODEL,

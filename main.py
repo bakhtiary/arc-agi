@@ -43,8 +43,8 @@ if __name__ == "__main__":
               '7ddcd7ec', 'b27ca6d3', '6aa20dc0', 'b527c5c6', '25ff71a9', '6e02f1e3', 'c1d99e64', '97a05b5b']
     task_ids = ['ce22a75a']
 
-    state_machine_solver = StateMachineSolver(SimpleLensStateMachine, litellm)
+    state_machine_solver = StateMachineSolver(SimpleLensStateMachine)
     
-    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=-1)
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=1)
 
 

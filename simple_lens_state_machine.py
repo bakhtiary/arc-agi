@@ -41,7 +41,7 @@ class SimpleLensStateMachine:
             message_to_send=[lambda: "can you write one or more functions that query the input or output "
                 "images and give useful information about them. Think of these functions as lenses that help "
                 "you see better. Notes: in both cases, your function should accept each grid as a Python "
-                "list of lists. Each element of the list represents one color as an integer from 0 to 9. "
+                "list of lists. Each element of the list represents one color as an integer from 0 to 9. Furthermore your function should not include any other inputs, only the grid. "
                 "I will execute the function or functions and give you the results."],
             do_work=self.extract_and_run_lens_code,
             next_state = "present_result",
