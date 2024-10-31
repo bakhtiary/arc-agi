@@ -1,6 +1,7 @@
 # TODO
 - [x] run LLM solve function in thread for a limitted time
 - [ ] use runner server which reads from stdin and supports healthcheck
+- [ ] save full llm response (openai response object, etc)
 - [x] log output as md
 - [x] handle multiple test cases in a task (as a list)
 - [x] predict two solutions for each test case (most_common(2))

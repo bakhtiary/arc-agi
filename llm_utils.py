@@ -1,7 +1,7 @@
 import json
 import re
 from image_utils import make_all_in_one_images_base64, make_image_base64
-from log_utils import save_log, message_to_md
+from log_utils import add_string_to_log, message_to_md
 
 
 def add_content_to_messages(messages, role, content, log_file):
@@ -16,7 +16,7 @@ def add_content_to_messages(messages, role, content, log_file):
         'content': content
     }
     messages.append(message)
-    save_log(message_to_md(message, False), log_file)
+    add_string_to_log(message_to_md(message, False), log_file)
 
 
 def add_image_to_content(content, grid):

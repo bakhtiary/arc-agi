@@ -23,3 +23,20 @@ def get_task_mix(dataset, seed=42, **groups):
 def read_task(task_id, dataset):
     json_text = (DATA_DIR / dataset / f'{task_id}.json').read_text()
     return json.loads(json_text)
+
+
+def score_detailed(task_id, dataset, solutions):
+    if solutions is None:
+        return 0
+    task = read_task(task_id, dataset)
+    test_input_grids = task['test']
+    if isinstance(test_input_grids, dict) and 'input' in test_input_grids:
+        test_input_grids = [test_input_grids]
+    
+    score = 0
+    for pair, solution in zip(test_input_grids, solutions):
+        output_grid = pair['output']
+        if output_grid == solution:
+            score += 1
+    
+    return score / len(test_input_grids)

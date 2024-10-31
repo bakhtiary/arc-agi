@@ -4,21 +4,18 @@ import os
 import markdown
 import sys
 
+from calc_logs_statistics import get_log_summaries
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 
 app = Flask(__name__)
 
-task_score_groups = {}
+task_score_groups = get_log_summaries()
 def get_task_level(dataset, task_id):
-    if dataset not in task_score_groups:
-        return 'n/a'
-    
-    for level,task_ids in task_score_groups[dataset].items():
-        if task_id in task_ids:
-            return level
-    
-    return 'n/a'
+    count, score, tot = task_score_groups[dataset].get(task_id, ('n/a','n/a','n/a'))
+    return f'Score: {score}/{count} (Total logs: {tot})'
+
 
 @app.route('/')
 def index():
@@ -64,6 +61,22 @@ def index():
         selected_md_file=selected_md_file,
         task_level=get_task_level('training', selected_task_id)
     )
+
+@app.route('/global_view')
+def global_view(root_dir):
+    root_dirs = [Path('logs'), Path('important-run-logs')]
+    ret = ''
+    for root_dir in root_dirs:
+        if not root_dir.exists():
+            ret += f'<h1>{root_dir} not found.</h1>'
+            continue
+        ret += f'<h1>{root_dir.name}</h1>'
+        for log_id_dir in root_dir.iterdir():
+            ret += f'<h2>{log_id_dir.name}</h2>'
+            for task_id_dir in log_id_dir.iterdir():
+                if len(list(task_id_dir.iterdir())) > 1:
+                    ret += f'<span style="color: red">Warning: more than one md file found in `{root_dir.name}/{log_id_dir.name}/{task_id_dir.name}`</span>'
+                ret += f'<a href="/#{root_dir.name}/{log_id_dir.name}/{task_id_dir.name}/1.full.md">{log_id_dir.name}</a>'
 
 @app.route('/logs/<root_dir>')
 def get_logs(root_dir):

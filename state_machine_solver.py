@@ -1,5 +1,5 @@
 from llm_utils import add_all_in_one_images_to_content, add_content_to_messages, add_text_to_content
-from log_utils import create_empty_log, save_log
+from log_utils import create_empty_log, add_string_to_log
 from simple_lens_state_machine import SimpleLensStateMachine
 from task_utils import read_task
 import litellm
@@ -58,7 +58,7 @@ class StateMachineSolver:
             else:
                 cur_state_name = next_state_name(response)
 
-        save_log(f"state machine finished, result is {cur_state_machine.solution}", log_file)
+        add_string_to_log(f"state machine finished, result is {cur_state_machine.solution}", log_file)
 
         return task_id, dataset, log_file, cur_state_machine.solution
 

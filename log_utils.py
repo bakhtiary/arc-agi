@@ -1,9 +1,21 @@
 import json
 
-def create_empty_log(log_file):
-    save_log("", log_file)
+def read_jsonl(file_path):
+    objs = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            objs.append(json.loads(line.strip()))
+    return objs
 
-def save_log(log_portion, log_file):
+def write_jsonl(objs: list, file_path):
+    with open(file_path, 'w') as file:
+        for entry in objs:
+            file.write(json.dumps(entry) + '\n')
+
+def create_empty_log(log_file):
+    add_string_to_log("", log_file)
+
+def add_string_to_log(log_portion: str, log_file):
     with open(log_file, 'a+') as fp:
         fp.write(log_portion)
 

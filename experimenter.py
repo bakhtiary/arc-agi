@@ -2,7 +2,7 @@ import time
 from multiprocessing import Pool
 import traceback
 
-from log_utils import add_termination_to_log, save_log
+from log_utils import add_termination_to_log, add_string_to_log
 from task_utils import read_task
 
 list_of_results = []
@@ -26,7 +26,7 @@ def _task_done(result):
     list_of_results.append(result)
     task_id, dataset, log_file, solutions = result
     score = score_detailed(task_id, dataset, solutions)
-    save_log(f"score is {score}", log_file)
+    add_string_to_log(f"score is {score}", log_file)
     print(f"Task done: {dataset=} {task_id=}, {score=}")
 
 
