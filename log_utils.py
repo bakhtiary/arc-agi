@@ -12,6 +12,11 @@ def write_jsonl(objs: list, file_path):
         for entry in objs:
             file.write(json.dumps(entry) + '\n')
 
+def append_jsonl(obj, file_path):
+    with open(file_path, 'a+') as file:
+        file.write(json.dumps(obj) + '\n')
+
+
 def create_empty_log(log_file):
     add_string_to_log("", log_file)
 
@@ -40,5 +45,20 @@ def message_to_md(message, prune_images):
     return md
 
 
-def add_termination_to_log(log_file, score):
-    ...
+def add_item_to_big_log(task_id, dataset, termination_reason, score, results_json_file, error_data=None, error_ak_data=None):
+    assert termination_reason in ['success', 'error', 'timeout', 'n/a']
+    log_obj = {
+        'task_id': task_id,
+        'dataset': dataset,
+        'termination_reason': termination_reason,
+        'score': score
+    }
+
+    if error_data is not None:
+        log_obj['error_data'] = repr(error_data)
+        assert error_ak_data is not None
+        log_obj['error_ak_data'] = repr(error_ak_data)
+
+    append_jsonl(log_obj, results_json_file)
+    
+    

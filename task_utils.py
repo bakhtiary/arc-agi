@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from random import Random
 
-from calc_logs_statistics import get_task_score_groups
+from calc_logs_statistics import get_log_summary_by_tasks, log_summary_to_ladder
 
 DATA_DIR = Path('data')
 

@@ -1,5 +1,5 @@
 # TODO
-- [ ] recover old loging (with .jsonl) <----------------------------
+- [x] recover old loging (with .jsonl) 
 - [x] task and experiment summary web interfaces
 - [x] run LLM solve function in thread for a limitted time
 - [ ] use runner server which reads from stdin and supports healthcheck

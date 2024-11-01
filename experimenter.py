@@ -2,8 +2,8 @@ import time
 from multiprocessing import Pool
 import traceback
 
-from log_utils import add_termination_to_log, add_string_to_log
-from task_utils import read_task
+from log_utils import add_item_to_big_log, add_string_to_log
+from task_utils import score_detailed
 
 list_of_results = []
 
@@ -17,7 +17,7 @@ def solver_wrapper(args):
         error_msg = traceback.format_exc()
         e = Exception(error_msg)
         e.ak_data = {'task_id': task_id, 'dataset': dataset,
-                     'log_file': log_dir / task_id / f'{1}.json'}
+                     'log_file': log_dir / task_id / f'{1}.full.md'}
         raise e
 
 
@@ -25,34 +25,26 @@ def solver_wrapper(args):
 def _task_done(result):
     list_of_results.append(result)
     task_id, dataset, log_file, solutions = result
+    results_json_file = log_file.parent.parent / 'results.json'
+    termination_reason = 'timeout' if solutions is None else 'success'
     score = score_detailed(task_id, dataset, solutions)
-    add_string_to_log(f"score is {score}", log_file)
+
+    add_string_to_log(f"# Termination information\n## Reason\nsuccess\n##Solutions\n{solutions}\n", log_file)
+    add_string_to_log(f"##Score\nscore is {score}\n", log_file)
     print(f"Task done: {dataset=} {task_id=}, {score=}")
+    add_item_to_big_log(task_id, dataset, termination_reason, score, results_json_file)
 
 
 def _task_error(raised_exception):
-    print("hello"+str(raised_exception))
+    print("(Early exception print)"+str(raised_exception))
     assert hasattr(raised_exception, 'ak_data')
+    d = raised_exception.ak_data
+    task_id, dataset, log_file = d['task_id'], d['dataset'], d['log_file']
+    results_json_file = log_file.parent.parent / 'results.json'
     print(f'Task error: {raised_exception} ({raised_exception.ak_data})')
-    add_termination_to_log({'termination': {'reason': 'exception', 'details': raised_exception}},
-                           raised_exception.ak_data['log_file'])
-
-
-def score_detailed(task_id, dataset, solutions):
-    if solutions is None:
-        return 0
-    task = read_task(task_id, dataset)
-    test_input_grids = task['test']
-    if isinstance(test_input_grids, dict) and 'input' in test_input_grids:
-        test_input_grids = [test_input_grids]
-    
-    score = 0
-    for pair, solution in zip(test_input_grids, solutions):
-        output_grid = pair['output']
-        if output_grid == solution:
-            score += 1
-    
-    return score / len(test_input_grids)
+    add_string_to_log(f"# Termination information\n## Reason\nerror\n## Error data\n{raised_exception}\n## Error ak_data\n{raised_exception.ak_data}\n", log_file)
+    add_string_to_log(f"##Score\nscore is 0.0\n", log_file)
+    add_item_to_big_log(task_id, dataset, 'error', 0.0, results_json_file, raised_exception, raised_exception.ak_data)
 
 def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
     """
