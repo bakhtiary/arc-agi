@@ -1,5 +1,8 @@
 from collections import defaultdict
 from pathlib import Path
+
+raise DeprecationWarning()
+
 try:
     from log_utils import read_jsonl
 except ModuleNotFoundError:
@@ -28,8 +31,8 @@ def log_summary_to_ladder(log_summary):
     
 if __name__ == '__main__':
     log_summary = get_log_summaries()
-    ladder = log_summary_to_ladder(log_summary)
-    for dataset, rest in ladder.items():
+    log_ladder = log_summary_to_ladder(log_summary)
+    for dataset, rest in log_ladder.items():
         for score, task_ids in rest.items():
             print(dataset, score, len(task_ids))
     

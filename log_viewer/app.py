@@ -1,27 +1,128 @@
+from collections import defaultdict
 from pathlib import Path
 from flask import Flask, render_template, jsonify
 import os
 import markdown
 import sys
 
-from calc_logs_statistics import get_log_summaries
+try:
+    from log_utils import read_jsonl
+except ModuleNotFoundError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from log_utils import read_jsonl
 
-sys.path.append(str(Path(__file__).parent.parent))
-
+from calc_logs_statistics import get_log_summary_by_experiments, get_log_summary_by_tasks, log_summary_to_ladder
 
 app = Flask(__name__)
 
-task_score_groups = get_log_summaries()
-def get_task_level(dataset, task_id):
-    count, score, tot = task_score_groups[dataset].get(task_id, ('n/a','n/a','n/a'))
-    return f'Score: {score}/{count} (Total logs: {tot})'
+log_root_dirs = [Path('important-run-logs'), Path('logs')]
+log_summary = get_log_summary_by_tasks(log_root_dirs)
+log_ladder = log_summary_to_ladder(log_summary)
 
+def get_task_level(dataset, task_id):
+    if task_id not in log_summary[dataset]:
+        return 'n/a'
+    
+    sum_score = sum(score for root_dir, log_dir, score in log_summary[dataset][task_id])
+    return f'{sum_score} / {len(log_summary[dataset][task_id])}'
+
+
+@app.route('/task_summary')
+def task_summary():
+    html = '''
+<style>
+.task-id {
+    font-family: Courier New;
+}
+.succ {
+    background-color: lightgreen;
+}
+.fail {
+}
+.exp {
+    background-color: #fffdd0;
+    padding: 3px;
+    margin: 3px;
+    border-radius: 10px;
+    display: inline-block;
+}
+</style>
+'''
+    all_log_ids = get_all_log_ids(log_root_dirs)
+    if len(all_log_ids) > len("abcdefghijklmnopqrstuvwxyz"):
+        raise Exception('Too many logs to show in global_view')
+    log_id_symbols = dict(zip(all_log_ids, list("abcdefghijklmnopqrstuvwxyz")))
+
+    log_summary_exp = get_log_summary_by_experiments(log_root_dirs)
+    def tr_order(e):
+        return ['success_ok', 'success_nok', 'error', 'n/a'].index(e[0])
+    
+    html += f'<h1>Task summary based on aggregate of <i>{log_root_dirs}</i></h1>'
+    html += '<h2>Legend</h2>'
+    for log_id, rest in log_summary_exp.items():
+        summary = ', '.join([f'{tr}: {len(task_ids)}' for tr, task_ids in sorted(rest.items(),key=tr_order)])
+        html += f'<span class="exp">{log_id} ({summary}, {log_id_symbols[log_id]})</span>'
+        
+    html  += f'<hr>'
+    for dataset, rest in log_ladder.items():
+        html += f'<h2>Dataset: {dataset}</h2>'
+        for sum_score, task_ids in rest.items():
+            sum_dict = defaultdict(int)
+            for task_id, log_ids in task_ids.items():
+                for root_dir,log_id,score in sorted(log_ids):
+                    if score != 0:
+                        sum_dict[log_id] += 1
+
+            summary = ', '.join(f'{log_id_symbols[log_id]}={v}' for log_id,v in sorted(sum_dict.items()))
+            html += f'<h3>Score: {sum_score:.2f} ({len(task_ids)}: {summary})</h3>'
+            
+            for task_id, log_ids in task_ids.items():
+                a_tags = []
+                for root_dir, log_id, score in sorted(log_ids):
+                    a_class = 'succ' if score != 0 else 'fail'
+                    a_tags.append(f'<a class="{a_class}" href="/#{root_dir.name}/{log_id}/{task_id}/1.full.md">{log_id_symbols[log_id]}</a>')
+                a_tags_html = ', '.join(a_tags)
+                html += f'<span class="task"><span class="task-id">{task_id}</span> ({a_tags_html})</span> '
+        html += '<hr>'
+    return html
+
+@app.route('/experiment_summary')
+def experiment_summary():
+    html = '''
+<style>
+
+</style>
+'''
+  
+    log_summary_exp = get_log_summary_by_experiments(log_root_dirs)
+    def tr_order(e):
+        return ['success_ok', 'success_nok', 'error', 'n/a'].index(e[0])
+    
+    html += f'<h1>Experiment summary based on aggregate of <i>{log_root_dirs}</i></h1><hr>'
+    for log_id, rest in log_summary_exp.items():
+        summary = ', '.join([f'{tr}: {len(task_ids)}' for tr, task_ids in sorted(rest.items(),key=tr_order)])
+        html += f'<h2>{log_id} ({summary})</h2>'
+        for tr, task_ids in rest.items():
+            html += f'<h3>{tr}</h3>'
+            for task_id in task_ids:
+                html += f'<a href="/#??/{log_id}/{task_id}/1.full.md">{task_id}</a> '    
+        html += '<hr>'
+    return html
+
+
+def get_all_log_ids(log_root_dirs):
+    all_log_ids = []
+    for log_summary_root_dir in log_root_dirs:
+        if log_summary_root_dir.exists():
+            all_log_ids.extend([d.name for d in log_summary_root_dir.iterdir()])
+    all_log_ids = sorted(all_log_ids)
+    return all_log_ids
 
 @app.route('/')
 def index():
     # Define possible root directories
-    root_dirs = ['logs', 'important-run-logs']
-    selected_root_dir = root_dirs[1]  # Default selection
+    selected_root_dir = log_root_dirs[0]  # Default selection
 
     # Get list of log IDs (folder names under selected root directory)
     root_dir = selected_root_dir
@@ -51,7 +152,7 @@ def index():
 
     return render_template(
         'index.html',
-        root_dirs=root_dirs,
+        root_dirs=[d.name for d in log_root_dirs], 
         selected_root_dir=selected_root_dir,
         log_ids=log_ids,
         selected_log_id=selected_log_id,
@@ -62,21 +163,6 @@ def index():
         task_level=get_task_level('training', selected_task_id)
     )
 
-@app.route('/global_view')
-def global_view(root_dir):
-    root_dirs = [Path('logs'), Path('important-run-logs')]
-    ret = ''
-    for root_dir in root_dirs:
-        if not root_dir.exists():
-            ret += f'<h1>{root_dir} not found.</h1>'
-            continue
-        ret += f'<h1>{root_dir.name}</h1>'
-        for log_id_dir in root_dir.iterdir():
-            ret += f'<h2>{log_id_dir.name}</h2>'
-            for task_id_dir in log_id_dir.iterdir():
-                if len(list(task_id_dir.iterdir())) > 1:
-                    ret += f'<span style="color: red">Warning: more than one md file found in `{root_dir.name}/{log_id_dir.name}/{task_id_dir.name}`</span>'
-                ret += f'<a href="/#{root_dir.name}/{log_id_dir.name}/{task_id_dir.name}/1.full.md">{log_id_dir.name}</a>'
 
 @app.route('/logs/<root_dir>')
 def get_logs(root_dir):
