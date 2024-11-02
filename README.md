@@ -1,5 +1,10 @@
+# Hypotehsis
+* infinitine loop of lense code
+- Providing images with larger squares, i.e., less promionimane or no gridlines, is better
+- series (chaining) several solution strategies in the state machine / or in parralel
+
 # TODO
-- [x] recover old loging (with .jsonl) 
+- [x] recover old central loging (now as .jsonl) 
 - [x] task and experiment summary web interfaces
 - [x] run LLM solve function in thread for a limitted time
 - [ ] use runner server which reads from stdin and supports healthcheck
