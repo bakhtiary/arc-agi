@@ -11,6 +11,7 @@ list_of_results = []
 def solver_wrapper(args):
     print(args)
     solver, task_id, dataset, log_dir = args
+    (log_dir / task_id).mkdir(parents=True, exist_ok=True)
     try:
         return solver(task_id, dataset, log_dir)
     except Exception as e:
@@ -36,6 +37,7 @@ def _task_done(result):
 
 
 def _task_error(raised_exception):
+    print("(Early exception print)"+str(raised_exception))
     print("(Early exception print)"+str(raised_exception))
     assert hasattr(raised_exception, 'ak_data')
     d = raised_exception.ak_data
@@ -63,12 +65,13 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
                 _task_error(e)
     else:
         with Pool(pool_size) as p:
-            p.map_async(
-                solver_wrapper,
-                iterable=all_job_args,
-                callback=_task_done,
-                error_callback=_task_error
-            )
+            for job_args in all_job_args:
+                p.apply_async(
+                    solver_wrapper,
+                    args=(job_args,),
+                    callback=_task_done,
+                    error_callback=_task_error
+                )
 
             p.close()
             p.join()

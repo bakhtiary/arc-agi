@@ -15,10 +15,8 @@ class StateMachineSolver:
 
     def __call__(self, task_id, dataset, log_dir): # --> task_id, dataset, log_file, solutions
         task = read_task(task_id, dataset)
-        (log_dir / task_id).mkdir(parents=True, exist_ok=True)
         log_file = log_dir / task_id / f'{1}.full.md'
         create_empty_log(log_file)
-        results: list[list[AKGrid]] = []
         print(f'Solving {task_id}: http://127.0.0.1:5000/#{log_dir.parent.name}/{log_dir.name}/{task_id}/{1}.full.md')
         
 

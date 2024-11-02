@@ -11,8 +11,11 @@ import warnings
 import litellm
 
 from simple_lens_state_machine import SimpleLensStateMachine
+from simple_state_machine import SimpleStateMachine
 from state_machine_solver import StateMachineSolver
 from dotenv import load_dotenv
+
+from task_utils import get_tasks
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
 
@@ -31,7 +34,7 @@ if __name__ == "__main__":
     # task_ids = ["c8f0f002"] # very easy
     # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
-    # task_ids = get_tasks(dataset)[0:10]
+    # task_ids = get_tasks(dataset)
     # task_ids = get_task_mix('training', simple=10, hard=10)
     # task_ids = ['c8f0f002', '623ea044', 'a2fd1cf0', 'd4a91cb9', 'ce22a75a', '23581191', '913fb3ed', 'b1948b0a',
     #             'b6afb2da', '27a28665', '4258a5f9', 'e9afcf9a', 'd23f8c26', '42a50994','ea786f4a', '91714a58', '4be741c5', '50cb2852', '5582e5ca', 'a61f2674', '85c4e7cd', 'd0f5fe59',
@@ -42,9 +45,17 @@ if __name__ == "__main__":
     #           '67385a82', '36d67576', '6d0160f0', '4938f0c2', '746b3537', 'dc433765', '8efcae92', '1e32b0e9',
     #           '6430c8c4', '5521c0d9', 'a64e4611', 'c9e6f938', '9ecd008a', '1f85a75f', '3de23699', '54d9e175',
     #           '7ddcd7ec', 'b27ca6d3', '6aa20dc0', 'b527c5c6', '25ff71a9', '6e02f1e3', 'c1d99e64', '97a05b5b']
-    task_ids = ['dc1df850', '49d1d64f', 'bb43febb']
-    state_machine_solver = StateMachineSolver(SimpleLensStateMachine)
-    
+    # task_ids = ['dc1df850', '49d1d64f', 'bb43febb']
+    # task_ids = ['ce22a75a', '49d1d64f']
+    state_machine_solver = StateMachineSolver(SimpleStateMachine)
+    task_ids = ['4258a5f9', '5582e5ca', '623ea044', '913fb3ed', '445eab21', 'd4a91cb9','23581191', 'e9afcf9a'
+                'd364b489', '68b16354', 'd631b094', 'a2fd1cf0', "4347f46a", "4be741c5", "d23f8c26", "42a50994",
+                "a416b8f3", "3618c87e", "ea786f4a", "aabf363d", "b6afb2da", "bdad9b1f", "a699fb00", "50cb2852", "49d1d64f", "b60334d2", "aedd82e4",
+    "1f876c06", "5614dbcf", "be94b721", "91714a58", "f25ffba3", "c9f8e694",
+    "d0f5fe59", "56ff96f3", "a9f96cdd", "253bf280", "2dee498d", "a61f2674",
+    "e98196ab", "85c4e7cd", "a740d043", "6f8cd79b", "1cf80156", "dc1df850",
+    "d511f180", "bb43febb", "27a28665", "44f52bb0", "e9614598", "bda2d7a6", "d4469b4b"
+                ]
     experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=16)
 
 

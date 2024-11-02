@@ -16,7 +16,7 @@ from calc_logs_statistics import get_log_summary_by_experiments, get_log_summary
 
 app = Flask(__name__)
 
-log_root_dirs = [Path('important-run-logs'), Path('logs')]
+log_root_dirs = [Path('important-run-logs')]
 log_summary = get_log_summary_by_tasks(log_root_dirs)
 log_ladder = log_summary_to_ladder(log_summary)
 
@@ -51,12 +51,12 @@ def task_summary():
 '''
     all_log_ids = get_all_log_ids(log_root_dirs)
     if len(all_log_ids) > len("abcdefghijklmnopqrstuvwxyz"):
-        raise Exception('Too many logs to show in global_view')
+        raise Exception('Too many logs to show in task summary')
     log_id_symbols = dict(zip(all_log_ids, list("abcdefghijklmnopqrstuvwxyz")))
 
     log_summary_exp = get_log_summary_by_experiments(log_root_dirs)
     def tr_order(e):
-        return ['success_ok', 'success_nok', 'error', 'n/a'].index(e[0])
+        return ['success_ok', 'success_nok', 'error', 'timeout', 'n/a'].index(e[0])
     
     html += f'<h1>Task summary based on aggregate of <i>{log_root_dirs}</i></h1>'
     html += '<h2>Legend</h2>'
@@ -97,7 +97,7 @@ def experiment_summary():
   
     log_summary_exp = get_log_summary_by_experiments(log_root_dirs)
     def tr_order(e):
-        return ['success_ok', 'success_nok', 'error', 'n/a'].index(e[0])
+        return ['success_ok', 'success_nok', 'error', 'timeout', 'n/a'].index(e[0])
     
     html += f'<h1>Experiment summary based on aggregate of <i>{log_root_dirs}</i></h1><hr>'
     for log_id, rest in log_summary_exp.items():
@@ -106,7 +106,8 @@ def experiment_summary():
         for tr, task_ids in rest.items():
             html += f'<h3>{tr}</h3>'
             for task_id in task_ids:
-                html += f'<a href="/#??/{log_id}/{task_id}/1.full.md">{task_id}</a> '    
+                # Todo, hardcoded root dir
+                html += f'<a href="/#important-run-logs/{log_id}/{task_id}/1.full.md">{task_id}</a> '
         html += '<hr>'
     return html
 
