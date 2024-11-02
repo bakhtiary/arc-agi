@@ -31,7 +31,7 @@ jobs:
       env: # Or as an environment variable
         KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
         KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-      run:
+      run: |
         pip install kaggle
         kaggle datasets version  --keep-tabular -p src -m ${{ github.sha }}
 
