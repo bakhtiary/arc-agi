@@ -3,15 +3,6 @@ from pathlib import Path
 from flask import Flask, render_template, jsonify
 import os
 import markdown
-import sys
-
-try:
-    from log_utils import read_jsonl
-except ModuleNotFoundError:
-    import sys
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from log_utils import read_jsonl
-
 from calc_logs_statistics import get_log_summary_by_experiments, get_log_summary_by_tasks, log_summary_to_ladder
 
 app = Flask(__name__)
@@ -213,5 +204,3 @@ def get_content(root_dir, log_id, task_id, md_file_id):
     else:
         return 'Content not found.'
 
-if __name__ == '__main__':
-    app.run(debug=True)
