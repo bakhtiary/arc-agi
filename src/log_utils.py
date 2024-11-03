@@ -49,7 +49,7 @@ def add_item_to_big_log(task_id, dataset, termination_reason, score, results_jso
     assert termination_reason in ['success', 'error', 'timeout', 'n/a']
     log_obj = {
         'task_id': task_id,
-        'dataset': dataset,
+        'dataset': dataset.dataset_location,
         'termination_reason': termination_reason,
         'score': score
     }

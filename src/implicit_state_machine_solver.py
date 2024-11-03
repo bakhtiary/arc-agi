@@ -60,7 +60,7 @@ def beam_solver_internal(task_id, dataset, log_dir, num_beams, msg):
 
 
 def implicit_state_machine_solver_func(task_id, dataset, log_file: Path, max_attempts=MAX_ATTEMPTS) -> list[AKGrid]:
-    task = read_task(task_id, dataset)
+    task = dataset.read_task(task_id)
 
     messages = []
     add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')

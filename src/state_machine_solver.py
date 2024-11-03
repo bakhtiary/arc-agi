@@ -1,7 +1,6 @@
 from llm_utils import add_all_in_one_images_to_content, add_content_to_messages, add_text_to_content
 from log_utils import create_empty_log, add_string_to_log
 from simple_lens_state_machine import SimpleLensStateMachine
-from task_utils import read_task
 import litellm
 
 AKGrid = list[list[int]]
@@ -14,7 +13,7 @@ class StateMachineSolver:
         self.state_machine_class = state_machine_class
 
     def __call__(self, task_id, dataset, log_dir): # --> task_id, dataset, log_file, solutions
-        task = read_task(task_id, dataset)
+        task = dataset.read_task(task_id)
         log_file = log_dir / task_id / f'{1}.full.md'
         create_empty_log(log_file)
         print(f'Solving {task_id}: http://127.0.0.1:5000/#{log_dir.parent.name}/{log_dir.name}/{task_id}/{1}.full.md')

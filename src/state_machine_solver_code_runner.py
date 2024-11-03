@@ -2,7 +2,8 @@ import sys
 import traceback
 
 from grid_utils import grid_is_correct
-from task_utils import read_task
+from task_utils import loadDataset
+
 
 class CodeRunner:
 
@@ -10,7 +11,7 @@ class CodeRunner:
         self.messages = []
 
     def start_running(self, task_id, dataset, code):
-        task = read_task(task_id, dataset)
+        task = dataset.read_task(task_id)
         self.run_code(code, task)
         return "\n".join(self.messages)
 
@@ -88,7 +89,7 @@ class CodeRunner:
 
 if __name__ == "__main__":
     task_id_ = str(sys.argv[1])
-    dataset_ = str(sys.argv[2])
+    dataset_ = loadDataset(str(sys.argv[2]))
     contents = []
     while True: # i.e., while EOFError has not encountered (where it is sent?)
         try:

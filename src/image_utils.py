@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 
-from task_utils import get_tasks, read_task
+from task_utils import get_tasks, Dataset
 
 ARC_COLORS = [
     '#000',
@@ -87,7 +87,7 @@ def draw_crap():
     plt.show()
 
 def draw_specific_all(task_id, draw_id=True):
-    train = read_task(task_id, dataset='training')['train']
+    train = Dataset("training").read_task(task_id )['train']
     plot_all_in_one_images(train)
     if draw_id:
         plt.figtext(0.5, 0.01, task_id, wrap=True, horizontalalignment='center', fontsize=12)
@@ -95,7 +95,7 @@ def draw_specific_all(task_id, draw_id=True):
     plt.show()
 
 def draw_specific_single(task_id, draw_id=True):
-    train = read_task(task_id, dataset='training')['train']
+    train = Dataset('training').read_task(task_id)['train']
     plot_Image(train[0]['input'])
     if draw_id:
         plt.figtext(0.5, 0.01, task_id, wrap=True, horizontalalignment='center', fontsize=12)

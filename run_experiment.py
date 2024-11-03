@@ -15,7 +15,7 @@ from simple_state_machine import SimpleStateMachine
 from state_machine_solver import StateMachineSolver
 from dotenv import load_dotenv
 
-from task_utils import get_tasks
+from task_utils import get_tasks, Dataset
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
 
@@ -30,8 +30,7 @@ def crappy_solve(task_id, dataset, num_beams, log_dir):
     return task_id, dataset, log_dir, []
 
 if __name__ == "__main__":
-    dataset = 'training'
-    # task_ids = ["c8f0f002"] # very easy
+    task_ids = ["c8f0f002",'952a094c'] # very easy, very hard
     # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
     # task_ids = get_tasks(dataset)
@@ -48,14 +47,15 @@ if __name__ == "__main__":
     # task_ids = ['dc1df850', '49d1d64f', 'bb43febb']
     # task_ids = ['ce22a75a', '49d1d64f']
     state_machine_solver = StateMachineSolver(SimpleStateMachine)
-    task_ids = ['4258a5f9', '5582e5ca', '623ea044', '913fb3ed', '445eab21', 'd4a91cb9','23581191', 'e9afcf9a'
-                'd364b489', '68b16354', 'd631b094', 'a2fd1cf0', "4347f46a", "4be741c5", "d23f8c26", "42a50994",
-                "a416b8f3", "3618c87e", "ea786f4a", "aabf363d", "b6afb2da", "bdad9b1f", "a699fb00", "50cb2852", "49d1d64f", "b60334d2", "aedd82e4",
-    "1f876c06", "5614dbcf", "be94b721", "91714a58", "f25ffba3", "c9f8e694",
-    "d0f5fe59", "56ff96f3", "a9f96cdd", "253bf280", "2dee498d", "a61f2674",
-    "e98196ab", "85c4e7cd", "a740d043", "6f8cd79b", "1cf80156", "dc1df850",
-    "d511f180", "bb43febb", "27a28665", "44f52bb0", "e9614598", "bda2d7a6", "d4469b4b"
-                ]
-    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=16)
+    # task_ids = ['4258a5f9', '5582e5ca', '623ea044', '913fb3ed', '445eab21', 'd4a91cb9','23581191', 'e9afcf9a'
+    #             'd364b489', '68b16354', 'd631b094', 'a2fd1cf0', "4347f46a", "4be741c5", "d23f8c26", "42a50994",
+    #             "a416b8f3", "3618c87e", "ea786f4a", "aabf363d", "b6afb2da", "bdad9b1f", "a699fb00", "50cb2852", "49d1d64f", "b60334d2", "aedd82e4",
+    # "1f876c06", "5614dbcf", "be94b721", "91714a58", "f25ffba3", "c9f8e694",
+    # "d0f5fe59", "56ff96f3", "a9f96cdd", "253bf280", "2dee498d", "a61f2674",
+    # "e98196ab", "85c4e7cd", "a740d043", "6f8cd79b", "1cf80156", "dc1df850",
+    # "d511f180", "bb43febb", "27a28665", "44f52bb0", "e9614598", "bda2d7a6", "d4469b4b"
+    #             ] # the ones with a "signal" what ever that means!
+    dataset = Dataset('training')
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=1)
 
 

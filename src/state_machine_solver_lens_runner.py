@@ -7,7 +7,7 @@ class LensRunner:
 
     def __init__(self, task_id, dataset, code):
         self.messages = []
-        self.task = read_task(task_id, dataset)
+        self.task = dataset.read_task(task_id)
         self.code = code
 
     def start_running(self):
