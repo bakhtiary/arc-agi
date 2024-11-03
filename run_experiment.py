@@ -15,7 +15,8 @@ from simple_state_machine import SimpleStateMachine
 from state_machine_solver import StateMachineSolver
 from dotenv import load_dotenv
 
-from task_utils import get_tasks, Dataset
+from task_utils import get_tasks
+from dataset import LocalDataset, KaggleDataset
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
 
@@ -55,7 +56,8 @@ if __name__ == "__main__":
     # "e98196ab", "85c4e7cd", "a740d043", "6f8cd79b", "1cf80156", "dc1df850",
     # "d511f180", "bb43febb", "27a28665", "44f52bb0", "e9614598", "bda2d7a6", "d4469b4b"
     #             ] # the ones with a "signal" what ever that means!
-    dataset = Dataset('training')
+    # dataset = LocalDataset('training')
+    dataset = KaggleDataset('arc-agi_training_challenges.json', "data/kaggle")
     experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=1)
 
 

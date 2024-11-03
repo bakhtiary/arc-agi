@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 from llm_utils import extract_code
-from task_utils import Dataset
+from dataset import LocalDataset
 
 current_file_directory = Path(__file__).parent
 
@@ -16,7 +16,7 @@ def extract_and_run_lens_code(response, task_id: str, dataset: str):
     code = extract_code(response)
     return run_code_read_outputs_with_timeout(task_id, dataset, code.encode(), 10, current_file_directory/'state_machine_solver_lens_runner.py')
 
-def run_code_read_outputs_with_timeout(task_id, dataset: Dataset, code, timeout_seconds: int,
+def run_code_read_outputs_with_timeout(task_id, dataset: LocalDataset, code, timeout_seconds: int,
                                        python_file):
     proc = subprocess.Popen(['python', python_file, task_id, dataset.string_encode()], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     try:

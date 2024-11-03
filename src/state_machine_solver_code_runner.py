@@ -2,7 +2,7 @@ import sys
 import traceback
 
 from grid_utils import grid_is_correct
-from task_utils import loadDataset
+from dataset import load_dataset
 
 
 class CodeRunner:
@@ -89,7 +89,7 @@ class CodeRunner:
 
 if __name__ == "__main__":
     task_id_ = str(sys.argv[1])
-    dataset_ = loadDataset(str(sys.argv[2]))
+    dataset_ = load_dataset(str(sys.argv[2]))
     contents = []
     while True: # i.e., while EOFError has not encountered (where it is sent?)
         try:
