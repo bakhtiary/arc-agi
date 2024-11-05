@@ -1,15 +1,15 @@
+from pathlib import Path
 import time
 from multiprocessing import Pool
 import traceback
 
 from log_utils import add_item_to_big_log, add_string_to_log
-from task_utils import score_detailed
+from task_utils import calc_score
 
 list_of_results = []
 
 
 def solver_wrapper(args):
-    print(args)
     solver, task_id, dataset, log_dir = args
     (log_dir / task_id).mkdir(parents=True, exist_ok=True)
     try:
@@ -24,16 +24,16 @@ def solver_wrapper(args):
 
 # Async model is cooporative multitasking with no preemption
 def _task_done(result):
-    list_of_results.append(result)
     task_id, dataset, log_file, solutions = result
     results_json_file = log_file.parent.parent / 'results.json'
     termination_reason = 'timeout' if solutions is None else 'success'
-    score = score_detailed(task_id, dataset, solutions)
+    score = calc_score(task_id, dataset, solutions, detailed=False)
 
     add_string_to_log(f"# Termination information\n## Reason\nsuccess\n##Solutions\n{solutions}\n", log_file)
     add_string_to_log(f"##Score\nscore is {score}\n", log_file)
     print(f"Task done: {dataset=} {task_id=}, {score=}")
     add_item_to_big_log(task_id, dataset, termination_reason, score, results_json_file)
+    list_of_results.append((task_id, dataset, log_file, solutions, termination_reason, score))
 
 
 def _task_error(raised_exception):
@@ -44,15 +44,22 @@ def _task_error(raised_exception):
     task_id, dataset, log_file = d['task_id'], d['dataset'], d['log_file']
     results_json_file = log_file.parent.parent / 'results.json'
     print(f'Task error: {raised_exception} ({raised_exception.ak_data})')
-    add_string_to_log(f"# Termination information\n## Reason\nerror\n## Error data\n{raised_exception}\n## Error ak_data\n{raised_exception.ak_data}\n", log_file)
+    add_string_to_log(f"# Termination information\n## Reason\nerror\n## Error data\n```\n{raised_exception}\n```\n## Error ak_data\n{raised_exception.ak_data}\n", log_file)
     add_string_to_log(f"##Score\nscore is 0.0\n", log_file)
     add_item_to_big_log(task_id, dataset, 'error', 0.0, results_json_file, raised_exception, raised_exception.ak_data)
 
-def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
+def experiment(solver, task_ids, dataset, log_dir: Path, pool_size=5):
     """
         pool_size = -1: no multi-processing
     """
+    print(f'=== Experiment started ' + '=======' * 8)
+    print(f'Live view: http://127.0.0.1:5000/experiment_summary#{log_dir.parent.name}-{log_dir.name}')
+    print('=======' * 11 + '==\n')
+
+
     log_dir.mkdir(parents=True, exist_ok=True)
+    (log_dir / 'results.json').touch()
+
 
     all_job_args = [(solver, task_id, dataset, log_dir) for task_id in task_ids]
     
@@ -75,6 +82,9 @@ def experiment(solver, task_ids, dataset, log_dir, pool_size=5):
 
             p.close()
             p.join()
-    print(list_of_results)
+
+    sum_scores = sum(e[-1] for e in list_of_results)
+    print(f'\n\nExperiment finished. {len(list_of_results)=}, {sum_scores=}')
+    # print(list_of_results)
 
 

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 def read_jsonl(file_path):
     objs = []
@@ -18,17 +19,17 @@ def append_jsonl(obj, file_path):
 
 
 def create_empty_log(log_file):
-    add_string_to_log("", log_file)
+    Path(log_file).touch()
 
 def add_string_to_log(log_portion: str, log_file):
     with open(log_file, 'a+') as fp:
         fp.write(log_portion)
 
-def message_to_md(message, prune_images):
+def message_to_md(message, prune_images, llm=None):
     md = ''
     role, content = message['role'], message['content']
     md += f'----\n\n'
-    md += f'# {role}:\n\n'
+    md += f'# {role} ({llm}):\n\n'
     if isinstance(content, str):
         md += f'{content}\n'
     else:

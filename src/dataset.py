@@ -1,21 +1,29 @@
+from abc import abstractmethod
 import json
 from pathlib import Path
 
 from task_utils import DATA_DIR
 
+class Dataset:
+    @abstractmethod
+    def read_task(self, task_id):
+        ...
 
-class LocalDataset:
+    @abstractmethod
+    def string_encode(self):
+        ...
+
+class LocalDataset(Dataset):
     def __init__(self, dataset_location, _DATA_DIR = DATA_DIR):
         self.DATA_DIR = _DATA_DIR
         self.dataset_location = dataset_location
     def read_task(self, task_id):
         json_text = (self.DATA_DIR / self.dataset_location / f'{task_id}.json').read_text()
         return json.loads(json_text)
-
     def string_encode(self):
         return f"LOCAL_DATASET:{self.DATA_DIR}:{self.dataset_location}"
 
-class KaggleDataset:
+class KaggleDataset(Dataset):
     def __init__(self, dataset_location, _DATA_DIR):
         self.DATA_DIR = Path(_DATA_DIR)
         self.dataset_location = dataset_location

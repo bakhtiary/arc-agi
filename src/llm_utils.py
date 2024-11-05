@@ -1,10 +1,10 @@
 import json
 import re
-from image_utils import make_all_in_one_images_base64, make_image_base64
+from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from log_utils import add_string_to_log, message_to_md
 
 
-def add_content_to_messages(messages, role, content, log_file):
+def add_content_to_messages_and_log(messages, role, content, log_file, llm=None):
     assert isinstance(content, list) or isinstance(content, str)
     if isinstance(content, str):
         content_str = content
@@ -16,11 +16,16 @@ def add_content_to_messages(messages, role, content, log_file):
         'content': content
     }
     messages.append(message)
-    add_string_to_log(message_to_md(message, False), log_file)
+    add_string_to_log(message_to_md(message, False, llm), log_file)
 
 
 def add_image_to_content(content, grid):
-    base64_img = make_image_base64(grid)
+    if isinstance(grid, list):
+        base64_img = single_grid_to_base64(grid)
+    elif isinstance(grid, str): # already base64 ecnoded
+         base64_img = grid
+    else:
+        raise Exception(f'grid of type {type(grid)} not supported.')
     content.append({
         'type': 'image_url',
         'image_url': {
@@ -36,8 +41,9 @@ def add_text_to_content(content, text):
     })
 
 
-def add_all_in_one_images_to_content(content: list, all_inputs: list[tuple]):
-    base64_img = make_all_in_one_images_base64(all_inputs)
+def add_all_in_one_images_to_content(content: list, all_pairs: list[tuple]):
+    raise DeprecationWarning()
+    base64_img = grids_all_in_one_to_base64(all_inputs)
     content.append({
         'type': 'image_url',
         'image_url': {

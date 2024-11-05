@@ -9,9 +9,13 @@ from pathlib import Path
 import warnings
 
 import litellm
+litellm.drop_params=True
 
 from simple_lens_state_machine import SimpleLensStateMachine
 from simple_state_machine import SimpleStateMachine
+from simple_state_machine_with_restart import SimpleStateMachineWithRestart
+from simple_state_machine_with_restart_and_o1 import SimpleStateMachineWithRestartAndO1
+
 from state_machine_solver import StateMachineSolver
 from dotenv import load_dotenv
 
@@ -31,7 +35,8 @@ def crappy_solve(task_id, dataset, num_beams, log_dir):
     return task_id, dataset, log_dir, []
 
 if __name__ == "__main__":
-    task_ids = ["c8f0f002",'952a094c'] # very easy, very hard
+    # task_ids = ["c8f0f002",'952a094c'] # very easy, very hard
+    task_ids = ['952a094c']
     # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
     # task_ids = get_tasks(dataset)
@@ -47,7 +52,7 @@ if __name__ == "__main__":
     #           '7ddcd7ec', 'b27ca6d3', '6aa20dc0', 'b527c5c6', '25ff71a9', '6e02f1e3', 'c1d99e64', '97a05b5b']
     # task_ids = ['dc1df850', '49d1d64f', 'bb43febb']
     # task_ids = ['ce22a75a', '49d1d64f']
-    state_machine_solver = StateMachineSolver(SimpleStateMachine)
+    state_machine_solver = StateMachineSolver(SimpleStateMachineWithRestartAndO1)
     # task_ids = ['4258a5f9', '5582e5ca', '623ea044', '913fb3ed', '445eab21', 'd4a91cb9','23581191', 'e9afcf9a'
     #             'd364b489', '68b16354', 'd631b094', 'a2fd1cf0', "4347f46a", "4be741c5", "d23f8c26", "42a50994",
     #             "a416b8f3", "3618c87e", "ea786f4a", "aabf363d", "b6afb2da", "bdad9b1f", "a699fb00", "50cb2852", "49d1d64f", "b60334d2", "aedd82e4",
@@ -56,8 +61,8 @@ if __name__ == "__main__":
     # "e98196ab", "85c4e7cd", "a740d043", "6f8cd79b", "1cf80156", "dc1df850",
     # "d511f180", "bb43febb", "27a28665", "44f52bb0", "e9614598", "bda2d7a6", "d4469b4b"
     #             ] # the ones with a "signal" what ever that means!
-    # dataset = LocalDataset('training')
-    dataset = KaggleDataset('arc-agi_training_challenges.json', "data/kaggle")
-    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=1)
+    dataset = LocalDataset('training')
+    # dataset = KaggleDataset('arc-agi_training_challenges.json', "data/kaggle")
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=-1)
 
 

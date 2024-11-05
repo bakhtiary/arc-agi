@@ -1,3 +1,4 @@
+from image_utils import grids_all_in_one_to_base64
 from state_machine_solver_utils import extract_and_run_mapping_code, extract_and_run_lens_code
 
 
@@ -25,7 +26,7 @@ class SimpleLensStateMachine:
         self.solution = None
         self.states["entry_point"] = dict(
             message_to_send=[lambda: "Given this image please give me a hypothesis about the relationship between "
-                            "the inputs (left) and the outputs (right)", lambda: "{all_in_one_images}"], # use {{x}} if this is an f-string
+                            "the inputs (left) and the outputs (right)", lambda: ('image', grids_all_in_one_to_base64(self.task['train']))], # use {{x}} if this is an f-string
             next_state="is_concrete"
         )
         self.states["is_concrete"] = dict(

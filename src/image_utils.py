@@ -22,38 +22,31 @@ ARC_COLORS = [
 ]
 arc_cmap = ListedColormap(ARC_COLORS)
 
-
-def make_image_base64(grid) -> str:
-    plot_Image(grid)
-    my_stringIObytes = io.BytesIO()
-    plt.savefig(my_stringIObytes, format='jpg')
-    my_stringIObytes.seek(0)
-    my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
-    return my_base64_jpgData
-
-
-def make_all_in_one_images_base64(all_grids, draw_edges=True, hide_spine_border=True) -> str:
-    plot_all_in_one_images(all_grids)
-    my_stringIObytes = io.BytesIO()
-    plt.savefig(my_stringIObytes, format='jpg')
-    my_stringIObytes.seek(0)
-    my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
-    return my_base64_jpgData
-
-
-def plot_Image(grid, draw_edges=True, hide_spine_border=True):
+def single_grid_to_base64(grid, draw_edges=True, hide_spine_border=True) -> str:
     fig, ax = plt.subplots()
-    draw_axis(ax, grid, draw_edges=draw_edges, hide_spine_border=hide_spine_border)
-    
+    draw_single_axis(ax, grid, draw_edges=draw_edges, hide_spine_border=hide_spine_border)
+    result = current_figure_to_base64()
+    plt.close(fig)
+    return result
 
-def plot_all_in_one_images(all_samples, draw_edges=True, hide_spine_border=True):
-    fig, axs = plt.subplots(len(all_samples), 2, figsize=(10, 5*len(all_samples)))
-    for i, sample in enumerate(all_samples):
-        draw_axis(axs[i, 0], sample['input'], draw_edges=draw_edges, hide_spine_border=hide_spine_border)
-        draw_axis(axs[i, 1], sample['output'], draw_edges=draw_edges, hide_spine_border=hide_spine_border)
+def grids_all_in_one_to_base64(all_pairs, draw_edges=True, hide_spine_border=True) -> str:
+    fig, axs = plt.subplots(len(all_pairs), 2, figsize=(10, 5*len(all_pairs)))
+    for i, sample in enumerate(all_pairs):
+        draw_single_axis(axs[i, 0], sample['input'], draw_edges=draw_edges, hide_spine_border=hide_spine_border)
+        draw_single_axis(axs[i, 1], sample['output'], draw_edges=draw_edges, hide_spine_border=hide_spine_border)
 
+    result = current_figure_to_base64()
+    plt.close(fig)
+    return result
 
-def draw_axis(axis_0, sample_grid, draw_edges=True, hide_spine_border=True):
+def current_figure_to_base64():
+    bytes_io = io.BytesIO()
+    plt.savefig(bytes_io, format='jpg')
+    bytes_io.seek(0)
+    base64_data = base64.b64encode(bytes_io.read()).decode()
+    return base64_data    
+
+def draw_single_axis(axis_0, sample_grid, draw_edges=True, hide_spine_border=True):
     if draw_edges:
         linewidth = 10 - ((max(len(sample_grid), len(sample_grid[0]))-1)//10)*4
     else:
@@ -71,43 +64,3 @@ def draw_axis(axis_0, sample_grid, draw_edges=True, hide_spine_border=True):
             spine.set_visible(False)
 
     axis_0.axis('equal')
-
-def draw_all():
-    task_ids = get_tasks('training')
-    for task_id in task_ids:
-        draw_specific_single(task_id)
-        plt.show()
-
-def draw_crap():
-    sample_inputs = [{'input': [[1, 1, 1], [0, 0, 0], [0, 0, 0]], 'output': [[0, 0, 0], [1, 1, 1], [0, 0, 0]]},
-                     {'input': [[0, 0, 0], [1, 1, 1], [0, 0, 0]], 'output': [[0, 0, 0], [0, 0, 0], [1, 1, 1]]},
-                     {'input': [[0, 1, 0], [1, 1, 0], [0, 0, 0]], 'output': [[0, 0, 0], [0, 1, 0], [1, 1, 0]]},
-                     {'input': [[0, 2, 2], [0, 0, 2], [0, 0, 0]], 'output': [[0, 0, 0], [0, 2, 2], [0, 0, 2]]}]
-    plot_all_in_one_images(sample_inputs)
-    plt.savefig('grid_visualization.png')
-    plt.show()
-
-def draw_specific_all(task_id, draw_id=True):
-    train = LocalDataset("training").read_task(task_id)['train']
-    plot_all_in_one_images(train)
-    if draw_id:
-        plt.figtext(0.5, 0.01, task_id, wrap=True, horizontalalignment='center', fontsize=12)
-    plt.savefig('grid_visualization.png')
-    plt.show()
-
-def draw_specific_single(task_id, draw_id=True):
-    train = LocalDataset('training').read_task(task_id)['train']
-    plot_Image(train[0]['input'])
-    if draw_id:
-        plt.figtext(0.5, 0.01, task_id, wrap=True, horizontalalignment='center', fontsize=12)
-    plt.savefig('grid_visualization.png')
-    plt.show()
-
-if __name__ == "__main__":
-    # draw_crap()
-    # draw_all()
-    # tests for 30x30 images
-    draw_specific_all('a64e4611', draw_id=False)
-    # draw_specific_single('a64e4611')
-    # draw_specific_all('ff28f65a', draw_id=False)
-    

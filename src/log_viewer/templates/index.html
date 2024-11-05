@@ -15,6 +15,23 @@
             width: 300px;
         }
     </style>
+
+<style>
+    .copy-button {
+        background-color: #c3cac3;
+        border: none;
+        color: rgb(64, 60, 60);
+        padding: 5px 10px;
+        text-align: center;
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    .copy-button:hover {
+        background-color: #45a049;
+    }
+    </style>
+    
 </head>
 <body>
     Root Directory:
@@ -175,6 +192,7 @@
                     document.querySelectorAll('pre code').forEach((block) => {
                         hljs.highlightElement(block);
                     });
+                    addCopyButtons();
                 })
                 .catch(error => {
                     console.error('Error loading content:', error);
@@ -208,7 +226,7 @@
             var taskId = document.getElementById('task-ids').value;
             var mdFileId = this.value;
             loadContent(rootDir, logId, taskId, mdFileId);
-            updateHash();
+            updateHash();            
         });
 
         window.addEventListener('load', function() {
@@ -225,11 +243,47 @@
             updateLogs(rootDir, hashState.logId, hashState.taskId, hashState.mdFileId);
         });
 
+        /*
         window.setInterval(function() {
             var hashState = parseHash();
             loadContent(hashState.rootDir, hashState.logId, hashState.taskId, hashState.mdFileId);
-        }, 800)
+        }, 800) */
     </script>
+
+<script>
+    function addCopyButtons() {
+        document.querySelectorAll('pre > code').forEach(function(codeBlock) {
+            // Create the copy button
+            var button = document.createElement('button');
+            button.innerText = 'Copy';
+            button.className = 'copy-button';
+    
+            // Handle the click event for the copy action
+            button.addEventListener('click', function() {
+                var code = codeBlock.innerText;
+                navigator.clipboard.writeText(code).then(function() {
+                    button.innerText = 'Copied!';
+                    setTimeout(function() {
+                        button.innerText = 'Copy';
+                    }, 2000);
+                }).catch(function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            });
+    
+            // Style the button and position it
+            var pre = codeBlock.parentNode;
+            pre.style.position = 'relative';
+            button.style.position = 'absolute';
+            button.style.top = '5px';
+            button.style.right = '5px';
+    
+            // Insert the button into the DOM
+            pre.insertBefore(button, codeBlock);
+        });
+    }
+    </script>
+    
         
 </body>
 </html>

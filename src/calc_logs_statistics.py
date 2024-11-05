@@ -4,13 +4,12 @@ from pathlib import Path
 from log_utils import read_jsonl
 
 def get_log_summary_by_experiments(log_root_dirs: list[Path]):
-    log_summary = defaultdict(lambda: defaultdict(list)) # log_id --> reason --> [task_id]
+    log_summary = defaultdict(lambda: defaultdict(list)) # root_dir,log_id --> reason --> [task_id]
     log_ids = set()
     for root_dir in log_root_dirs:
         for results_json in root_dir.rglob('results.json'):
             objs = read_jsonl(results_json)
             log_id = results_json.parent.name
-            log_summary[log_id]
             if log_id in log_ids:
                 print(f'log {log_id} already processes, deemed as redundant.')
                 continue
@@ -22,7 +21,11 @@ def get_log_summary_by_experiments(log_root_dirs: list[Path]):
                         tr += '_nok'
                     else:
                         tr += '_ok'
-                log_summary[log_id][tr].append(obj['task_id'])
+                log_summary[(root_dir.name, log_id)][tr].append(obj['task_id'])
+            
+            not_in_results_json = set(d.name for d in results_json.parent.iterdir()) - {'results.json'} - set(obj['task_id'] for obj in objs)
+            log_summary[(root_dir.name, log_id)]['not_in_results_json'] = list(not_in_results_json)
+    
     return dict(sorted(log_summary.items()))
 
 def get_log_summary_by_tasks(log_root_dirs: list[Path]):

@@ -10,7 +10,7 @@ import requests
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from grid_utils import AKGrid, AKGridTuple, grid_is_correct, grid_list2tuple, grid_tuple2list
-from llm_utils import add_all_in_one_images_to_content, add_content_to_messages, add_image_to_content, add_text_to_content, extract_code, save_messages
+from llm_utils import add_all_in_one_images_to_content, add_content_to_messages_and_log, add_image_to_content, add_text_to_content, extract_code, save_messages
 from task_utils import read_task
 
 raise DeprecationWarning('This file is not updated')
@@ -63,7 +63,7 @@ def implicit_state_machine_solver_func(task_id, dataset, log_file: Path, max_att
     task = dataset.read_task(task_id)
 
     messages = []
-    add_content_to_messages(messages, 'system', 'You are an intelligent assistant and a Python expert.')
+    add_content_to_messages_and_log(messages, 'system', 'You are an intelligent assistant and a Python expert.')
     setup_to_analyze_problem(messages, task)
     chat_with_llm(messages)
     setup_to_ask_for_first_solution(messages, task)
@@ -78,7 +78,7 @@ def implicit_state_machine_solver_func(task_id, dataset, log_file: Path, max_att
         else:
             err_content, result = verify_code(code, task)
             if err_content:
-                add_content_to_messages(messages, 'user', err_content)
+                add_content_to_messages_and_log(messages, 'user', err_content)
             else:
                 return result
 
@@ -127,7 +127,7 @@ def chat_with_llm(messages, llm_model='llama'):
             temperature=0,
         )
     assistant_reply = response['choices'][0]['message']['content'].strip()
-    add_content_to_messages(messages, 'assistant', assistant_reply)
+    add_content_to_messages_and_log(messages, 'assistant', assistant_reply)
     return assistant_reply
 
 
@@ -138,7 +138,7 @@ def setup_to_analyze_problem(messages, task):
     # add_image_to_content(content, task['train'][0]['input'])
     # add_image_to_content(content, task['train'][0]['output'])
     add_all_in_one_images_to_content(content, task['train'])
-    add_content_to_messages(messages, 'user', content)
+    add_content_to_messages_and_log(messages, 'user', content)
 
 
 def setup_to_ask_for_first_solution(messages, task):
@@ -150,11 +150,11 @@ def setup_to_ask_for_first_solution(messages, task):
             f'\n\nPlease enclose code in triple backticks as usual.'
             # TODO: One shot example
     ))
-    add_content_to_messages(messages, 'user', content)
+    add_content_to_messages_and_log(messages, 'user', content)
 
 
 def send_short_message(messages, text):
-    add_content_to_messages(messages, 'user', text)
+    add_content_to_messages_and_log(messages, 'user', text)
     assistant_reply = chat_with_llm(messages)
     return assistant_reply
 

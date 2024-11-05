@@ -18,7 +18,7 @@ def get_task_mix(dataset, seed=42, **groups):
     return task_ids
 
 
-def score_detailed(task_id, dataset, solutions):
+def calc_score(task_id, dataset, solutions):
     if solutions is None:
         return 0
     task = dataset.read_task(task_id)

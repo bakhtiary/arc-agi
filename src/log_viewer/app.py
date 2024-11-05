@@ -1,24 +1,35 @@
 from collections import defaultdict
+import itertools
 from pathlib import Path
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import os
 import markdown
 from calc_logs_statistics import get_log_summary_by_experiments, get_log_summary_by_tasks, log_summary_to_ladder
+from dataset import LocalDataset
+from image_utils import single_grid_to_base64
+from state_machine_solver_utils import run_code_read_outputs_with_timeout
 
 app = Flask(__name__)
 
-log_root_dirs = [Path('important-run-logs')]
-log_summary = get_log_summary_by_tasks(log_root_dirs)
-log_ladder = log_summary_to_ladder(log_summary)
+current_file_directory = Path(__file__).parent
+log_root_dirs = [Path('important-run-logs'),Path('logs')]
+log_summary_task = get_log_summary_by_tasks(log_root_dirs)
+log_ladder = log_summary_to_ladder(log_summary_task)
 
 def get_task_level(dataset, task_id):
-    if task_id not in log_summary[dataset]:
+    if task_id not in log_summary_task[dataset]:
         return 'n/a'
     
-    sum_score = sum(score for root_dir, log_dir, score in log_summary[dataset][task_id])
-    return f'{sum_score} / {len(log_summary[dataset][task_id])}'
+    sum_score = sum(score for root_dir, log_dir, score in log_summary_task[dataset][task_id])
+    return f'{sum_score} / {len(log_summary_task[dataset][task_id])}'
 
-
+def dictionary_order_iterator():
+    length = 1
+    while True:
+        for chars in itertools.product('abcdefghijklmnopqrstuvwxyz', repeat=length):
+            yield ''.join(chars)
+        length += 1
+        
 @app.route('/task_summary')
 def task_summary():
     html = '''
@@ -41,17 +52,16 @@ def task_summary():
 </style>
 '''
     all_log_ids = get_all_log_ids(log_root_dirs)
-    if len(all_log_ids) > len("abcdefghijklmnopqrstuvwxyz"):
-        raise Exception('Too many logs to show in task summary')
-    log_id_symbols = dict(zip(all_log_ids, list("abcdefghijklmnopqrstuvwxyz")))
+    iterator = dictionary_order_iterator()
+    log_id_symbols = {all_log_id: next(iterator) for all_log_id in all_log_ids}
 
     log_summary_exp = get_log_summary_by_experiments(log_root_dirs)
     def tr_order(e):
-        return ['success_ok', 'success_nok', 'error', 'timeout', 'n/a'].index(e[0])
+        return ['not_in_results_json','success_ok', 'success_nok', 'error', 'timeout', 'n/a'].index(e[0])
     
     html += f'<h1>Task summary based on aggregate of <i>{log_root_dirs}</i></h1>'
     html += '<h2>Legend</h2>'
-    for log_id, rest in log_summary_exp.items():
+    for (root_dir, log_id), rest in log_summary_exp.items():
         summary = ', '.join([f'{tr}: {len(task_ids)}' for tr, task_ids in sorted(rest.items(),key=tr_order)])
         html += f'<span class="exp">{log_id} ({summary}, {log_id_symbols[log_id]})</span>'
         
@@ -88,18 +98,32 @@ def experiment_summary():
   
     log_summary_exp = get_log_summary_by_experiments(log_root_dirs)
     def tr_order(e):
-        return ['success_ok', 'success_nok', 'error', 'timeout', 'n/a'].index(e[0])
+        return ['not_in_results_json', 'success_ok', 'success_nok', 'error', 'timeout', 'n/a'].index(e[0])
     
     html += f'<h1>Experiment summary based on aggregate of <i>{log_root_dirs}</i></h1><hr>'
-    for log_id, rest in log_summary_exp.items():
-        summary = ', '.join([f'{tr}: {len(task_ids)}' for tr, task_ids in sorted(rest.items(),key=tr_order)])
-        html += f'<h2>{log_id} ({summary})</h2>'
-        for tr, task_ids in rest.items():
+    for (root_dir, log_id), rest in log_summary_exp.items():
+        summary = 'total: ' + str(sum(len(task_ids) for tr, task_ids in rest.items())) + ': '
+        summary += ', '.join([f'{tr}: {len(task_ids)}' for tr, task_ids in sorted(rest.items(),key=tr_order)])
+        html += f'<h2 id="{root_dir}-{log_id}">{root_dir}/{log_id} ({summary})</h2>'
+        for tr, task_ids in sorted(rest.items(),key=tr_order):
+            if len(task_ids) == 0:
+                continue
             html += f'<h3>{tr}</h3>'
             for task_id in task_ids:
                 # Todo, hardcoded root dir
-                html += f'<a href="/#important-run-logs/{log_id}/{task_id}/1.full.md">{task_id}</a> '
+                html += f'<a href="/#{root_dir}/{log_id}/{task_id}/1.full.md">{task_id}</a> '
         html += '<hr>'
+
+    html += '''<script>const scrollTo = el => {
+  if (el) {
+    const top = window.scrollY + el.getBoundingClientRect().top
+    window.scrollTo({ top: top, behavior: "smooth" })
+  }
+}
+
+// wrap in a domReady type callback if needed
+scrollTo(document.querySelector(window.location.hash))
+</script>'''
     return html
 
 
@@ -198,9 +222,41 @@ def get_content(root_dir, log_id, task_id, md_file_id):
             md_content = file.read()
         html_content = markdown.markdown(
             md_content,
-            extensions=['fenced_code', 'codehilite']
+            tab_length=2,
+            extensions=['fenced_code', 'codehilite', 'nl2br']
         )
         return html_content
     else:
         return 'Content not found.'
+    
 
+@app.route('/md_test', methods=['GET', 'POST'])
+def md_test():
+    html_content = ''
+    md_content = ''
+    if request.method == 'POST':
+        md_content = request.form.get('md_content', '')
+        html_content = markdown.markdown(
+            md_content,
+            tab_length=3,
+            extensions=['fenced_code', 'codehilite', 'nl2br']
+        )
+
+    return render_template('md_test_index.html', md_content=md_content, html_content=html_content)
+
+@app.route('/solve_fn', methods=['GET', 'POST'])
+def solve_fn():
+    code = ''
+    html_content = ''
+    if request.method == 'POST':
+        code = request.form.get('code', '')
+        # task_id = request.form.get('task_id', '')
+        outputs = run_code_read_outputs_with_timeout('952a094c', LocalDataset('training'), code.encode(), 10,
+                                       current_file_directory.parent/'state_machine_solver_code_runner.py')
+        for obj in outputs:
+            if 'text' in obj:
+                html_content += f'<div>{obj["text"]}</div>'
+            elif 'grid' in obj:
+                html_content += f'<div><img src="data:image/jpeg;base64,{single_grid_to_base64(obj["grid"], draw_edges=False)}"></div>'
+
+    return render_template('solve_fn_index.html', code=code, html_content=html_content)
