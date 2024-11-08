@@ -1,0 +1,5 @@
+1.md shows a wrong hypothesis: Only the color of the leftmost shape changes
+2.md a correct one: The pattern involves identifying shapes with holes and changing their color from blue to light blu
+--
+Bothe produced with SimpleStateMachineDistinctPairs, temperature=0
+The same might happen with SimpleStateMachineAllIneOne or SimpleStateMachineSinglePair

@@ -1,0 +1,5 @@
+Used
+ state_machine_solver = StateMachineMultiSolver([
+        SimpleStateMachineAllInOne, SimpleStateMachineSinglePair])
+
+first one with 5 attempts, and the second with 2 attempts

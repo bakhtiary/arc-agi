@@ -1,8 +1,6 @@
 import sys
 import traceback
 
-from task_utils import read_task
-
 class LensRunner:
 
     def __init__(self, task_id, dataset, code):

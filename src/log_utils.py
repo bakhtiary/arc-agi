@@ -22,8 +22,13 @@ def create_empty_log(log_file):
     Path(log_file).touch()
 
 def add_string_to_log(log_portion: str, log_file):
-    with open(log_file, 'a+') as fp:
-        fp.write(log_portion)
+    if isinstance(log_file, Path | str): 
+        with open(log_file, 'a+') as fp:
+            fp.write(log_portion)
+    elif hasattr(log_file, 'write'):
+        log_file.write(log_portion)
+    else:
+        raise Exception(f'Cannot log into {log_file}') 
 
 def message_to_md(message, prune_images, llm=None):
     md = ''

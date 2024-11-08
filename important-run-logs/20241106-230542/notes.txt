@@ -1,0 +1,18 @@
+Used src/simple_state_machine_with_o1.py. Long runs, at some point asked for o1 summary.
+No obvious imporvemnt.
+
+Notes copied from the python file:
+Analysing these three logs:
+    - 20240928-204119 (not_in_results_json: 0, success_ok: 41, n/a: 359, a)
+    - 20240929-194035 (not_in_results_json: 11, success_ok: 30, n/a: 293, b)
+    - 20241106-230542 (not_in_results_json: 0, success_ok: 15, success_nok: 1, timeout: 11, c)
+
+That is:
+Score: 2.00 (17: a=15, b=10, c=9)
+91714a58 (a, b, c) 50cb2852 (a, b, c) 4347f46a (a, c) a61f2674 (a, b, c) 85c4e7cd (a, b, c) a2fd1cf0 (a, b) b60334d2 (a, c) d511f180 (a, b, c) e98196ab (a, c) 56ff96f3 (a, b, c) 23581191 (a, b) b1948b0a (a, b) b6afb2da (a, b) 4258a5f9 (a, b) e9afcf9a (a, b) d23f8c26 (a, b) 42a50994 (a, b)
+Score: 1.00 (31: a=18, b=12, c=1)
+ea786f4a (a, b) beb8660c (a, c) 4be741c5 (a, b) c59eb873 (a) 5582e5ca (a, b) d0f5fe59 (a, b, c) d364b489 (a, b) 49d1d64f (a, b, c) 6f8cd79b (a, b) be94b721 (a) 5614dbcf (a, b) aedd82e4 (a, b) c9f8e694 (a, b) 1f876c06 (a) 445eab21 (a, b) 68b16354 (a, b) aabf363d (a) a699fb00 (a, b) a416b8f3 (a, b) bdad9b1f (a, b) 9172f3a0 (a) f25ffba3 (a, b) 253bf280 (a, b) 3618c87e (a, b) 1cf80156 (a, b) 2dee498d (a, b) bb43febb (a, b) d631b094 (a, b, c) a740d043 (a) dc1df850 (a, b) a9f96cdd (a, b)
+
+Shows that: there are several cases that o1-method acts as a union of the two, however, there is
+no single case that this method solves a problem unsolved by that union. So, if it's a way to combine the
+two in an organic and efficient way, there is no need to consult pricy o1.

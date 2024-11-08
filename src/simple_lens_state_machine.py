@@ -76,7 +76,7 @@ class SimpleLensStateMachine:
     def extract_and_run_mapping_code_works(self, response):
         result = extract_and_run_mapping_code(response, self.task_id, self.dataset)
         self.run_results.append(result)
-        return "<successful run>" in result
+        return "|successful run|" in result
 
     def extract_and_save_solution(self, response):
-        self.solution = eval(self.run_results[-1].split("<successful run>")[1])
+        self.solution = eval(self.run_results[-1].split("|successful run|")[1])

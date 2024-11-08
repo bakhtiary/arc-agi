@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Previewer</title>
+    <title>Solve Function Tester</title>
     <style>
         /* Reset default margins and paddings */
         * {
@@ -48,6 +48,7 @@
     <form id="markdown-form" method="post" action="/solve_fn">
         <div id="editor">
             <h2>solve_fn tester</h2>
+            Dataset: <input name="dataset" value="{{ dataset }}"> Task ID: <input name="task_id" value="{{ task_id }}">
             <textarea name="code" placeholder="Enter Markdown here...">{{ code }}</textarea>
             <button type="submit">Test Code</button>
         </div>

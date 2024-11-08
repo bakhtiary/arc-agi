@@ -23,7 +23,7 @@ def get_log_summary_by_experiments(log_root_dirs: list[Path]):
                         tr += '_ok'
                 log_summary[(root_dir.name, log_id)][tr].append(obj['task_id'])
             
-            not_in_results_json = set(d.name for d in results_json.parent.iterdir()) - {'results.json'} - set(obj['task_id'] for obj in objs)
+            not_in_results_json = set(d.name for d in results_json.parent.iterdir() if d.is_dir()) - set(obj['task_id'] for obj in objs)
             log_summary[(root_dir.name, log_id)]['not_in_results_json'] = list(not_in_results_json)
     
     return dict(sorted(log_summary.items()))
@@ -42,9 +42,9 @@ def get_log_summary_by_tasks(log_root_dirs: list[Path]):
             log_ids.add(log_id)
             for obj in objs:
                 log_summary[obj['dataset']][obj['task_id']].append((root_dir, log_id, obj['score']))
-        return log_summary
+    return log_summary
 
-def log_summary_to_ladder(log_summary):
+def task_summary_to_ladder(log_summary):
     # Returns ladder, which is: dataset --> sum_score --> task_id --> [(root_dir, log_id, score)]
     ladder = defaultdict(lambda: defaultdict(lambda: dict()))
     for dataset, rest in log_summary.items():
@@ -56,9 +56,9 @@ def log_summary_to_ladder(log_summary):
 
     
 if __name__ == '__main__':
-    log_summary_root_dirs = [Path('important-run-logs'), Path('logs')]
-    log_summary = get_log_summary_by_tasks(log_summary_root_dirs)
-    log_ladder = log_summary_to_ladder(log_summary)
+    log_root_dirs = [Path('important-run-logs'), Path('logs')]
+    log_summary = get_log_summary_by_tasks(log_root_dirs)
+    log_ladder = task_summary_to_ladder(log_summary)
     for dataset, rest in log_ladder.items():
         for score, task_ids in rest.items():
             print(dataset, score, len(task_ids))

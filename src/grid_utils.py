@@ -14,11 +14,19 @@ def grid_tuple2list(grid: AKGridTuple) -> AKGrid:
 
 
 def grid_is_correct(pred_grid):
+    # This alone does not handle None in the arrays
     try:
         t = np.array(pred_grid)
-        return len(t.shape) == 2
+        if len(t.shape) != 2:
+            return False
     except:
         return False
+    
+    for elem in pred_grid:
+        if not all(isinstance(x, int) for x in elem):
+            return False
+    
+    return True
     
 
 def get_grid_sizes(task, which) -> str:

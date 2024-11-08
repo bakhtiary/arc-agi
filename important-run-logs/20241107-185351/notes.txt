@@ -1,0 +1,2 @@
+the same as important-run-logs/20241107-184445/notes.txt
+with 5 attempts for both all_in_one and single_pair

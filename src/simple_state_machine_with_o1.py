@@ -2,8 +2,25 @@ from grid_utils import get_grid_sizes
 from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from state_machine_solver_utils import extract_and_run_mapping_code
 
-class SimpleStateMachineWithRestartAndO1:
-    def __init__(self, task_id, dataset, weak_llm='o1-mini', o1_llm='o1-mini'):
+"""
+Analysing these three logs:
+    - 20240928-204119 (not_in_results_json: 0, success_ok: 41, n/a: 359, a)
+    - 20240929-194035 (not_in_results_json: 11, success_ok: 30, n/a: 293, b)
+    - 20241106-230542 (not_in_results_json: 0, success_ok: 15, success_nok: 1, timeout: 11, c)
+
+That is:
+Score: 2.00 (17: a=15, b=10, c=9)
+91714a58 (a, b, c) 50cb2852 (a, b, c) 4347f46a (a, c) a61f2674 (a, b, c) 85c4e7cd (a, b, c) a2fd1cf0 (a, b) b60334d2 (a, c) d511f180 (a, b, c) e98196ab (a, c) 56ff96f3 (a, b, c) 23581191 (a, b) b1948b0a (a, b) b6afb2da (a, b) 4258a5f9 (a, b) e9afcf9a (a, b) d23f8c26 (a, b) 42a50994 (a, b)
+Score: 1.00 (31: a=18, b=12, c=1)
+ea786f4a (a, b) beb8660c (a, c) 4be741c5 (a, b) c59eb873 (a) 5582e5ca (a, b) d0f5fe59 (a, b, c) d364b489 (a, b) 49d1d64f (a, b, c) 6f8cd79b (a, b) be94b721 (a) 5614dbcf (a, b) aedd82e4 (a, b) c9f8e694 (a, b) 1f876c06 (a) 445eab21 (a, b) 68b16354 (a, b) aabf363d (a) a699fb00 (a, b) a416b8f3 (a, b) bdad9b1f (a, b) 9172f3a0 (a) f25ffba3 (a, b) 253bf280 (a, b) 3618c87e (a, b) 1cf80156 (a, b) 2dee498d (a, b) bb43febb (a, b) d631b094 (a, b, c) a740d043 (a) dc1df850 (a, b) a9f96cdd (a, b)
+
+Shows that: there are several cases that o1-method acts as a union of the two, however, there is
+no single case that this method solves a problem unsolved by that union. So, if it's a way to combine the
+two in an organic and efficient way, there is no need to consult pricy o1.
+"""
+
+class SimpleStateMachineWithO1:
+    def __init__(self, task_id, dataset, weak_llm='gpt-4o', o1_llm='o1-mini'):
         self.start_state = 'entry_point'
         self.phase = 'all_in_one'
         self.states = {}
@@ -41,7 +58,7 @@ let you know the results.'''
             ],
             llm=lambda: self.weak_llm,
             do_work=self.extract_and_run_mapping_code,
-            next_state=lambda response: 'success' if '<successful run>' in self.run_results[-1] else 'mapping_code_failed'
+            next_state=lambda response: 'success' if self.is_last_run_success() else 'mapping_code_failed'
         )
 
         self.states['mapping_code_failed'] = dict(
@@ -51,7 +68,8 @@ let you know the results.'''
             ],
             llm=lambda: self.weak_llm if self.phase != 'o1' else self.o1_llm,
             do_work=self.extract_and_run_mapping_code,
-            next_state=lambda response: self.mapping_code_failed_next_state(response)
+            message_ttl=lambda: [1,1],
+            next_state=lambda response: self.mapping_code_failed_next_state(response)            
         )
 
         self.states['send_first_pair'] = dict(
@@ -78,7 +96,7 @@ smaller cells. The maximum grid size is 30x30. {get_grid_sizes(self.task, which=
 let you know the results.'''
             ],
             llm=lambda: self.weak_llm,
-            next_state=lambda response: 'success' if '<successful run>' in self.run_results[-1] else 'mapping_code_failed'
+            next_state=lambda response: 'success' if self.is_last_run_success() else 'mapping_code_failed'
         )
 
         self.states['aks_for_o1_summary'] = dict(
@@ -110,9 +128,8 @@ Can you work out the correct code that transforms inputs to the outputs?'''
             ],
             llm=lambda: self.o1_llm,
             do_work=self.extract_and_run_mapping_code,            
-            next_state=lambda response: 'success' if '<successful run>' in self.run_results[-1] else 'mapping_code_failed'
+            next_state=lambda response: 'success' if self.is_last_run_success() else 'mapping_code_failed'
         )
-
 
         self.states['success'] = dict(
             pre_work=self.extract_and_save_solution,
@@ -140,11 +157,19 @@ Can you work out the correct code that transforms inputs to the outputs?'''
         results = extract_and_run_mapping_code(response, self.task_id, self.dataset)
         self.run_results.append(results)
 
+    def is_last_run_success(self):
+        return (
+            len(self.run_results) >= 1 and
+            len(self.run_results[-1]) >= 2 and
+            'text' in self.run_results[-1][-2] and
+            self.run_results[-1][-2]['text'] == '|successful run|'
+        )
+
     def extract_and_save_solution(self):
-        self.solution = eval(self.run_results[-1].split('<successful run>')[1])
+        self.solution = eval(self.run_results[-1][-1]['text'])
 
     def mapping_code_failed_next_state(self, response):
-        if '<successful run>' in self.run_results[-1]:
+        if self.is_last_run_success():
             return 'success'
         elif self.num_failed < self.max_num_failed:
             return 'mapping_code_failed'

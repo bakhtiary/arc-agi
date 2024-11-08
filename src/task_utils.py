@@ -18,7 +18,7 @@ def get_task_mix(dataset, seed=42, **groups):
     return task_ids
 
 
-def calc_score(task_id, dataset, solutions):
+def calc_score(task_id, dataset, solutions, detailed):
     if solutions is None:
         return 0
     task = dataset.read_task(task_id)
@@ -26,10 +26,18 @@ def calc_score(task_id, dataset, solutions):
     if isinstance(test_input_grids, dict) and 'input' in test_input_grids:
         test_input_grids = [test_input_grids]
     
-    score = 0
-    for pair, solution in zip(test_input_grids, solutions):
-        output_grid = pair['output']
-        if output_grid == solution:
-            score += 1
+    if detailed:
+        sum_score, tot = 0, 0
+        for pair, solution in zip(test_input_grids, solutions):
+            if 'output' in pair:
+                tot += 1
+                if pair['output'] == solution:            
+                    sum_score += 1
+        return sum_score / tot
     
-    return score / len(test_input_grids)
+    else:
+        for pair, solution in zip(test_input_grids, solutions):
+            if 'output' in pair and pair['output'] != solution:
+                return 0
+        
+        return 1

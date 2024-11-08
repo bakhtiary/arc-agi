@@ -7,36 +7,60 @@
 from datetime import datetime
 from pathlib import Path
 import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
+
+from dotenv import load_dotenv
+load_dotenv(".secrets")
 
 import litellm
 litellm.drop_params=True
 
-from simple_lens_state_machine import SimpleLensStateMachine
-from simple_state_machine import SimpleStateMachine
-from simple_state_machine_with_restart import SimpleStateMachineWithRestart
-from simple_state_machine_with_restart_and_o1 import SimpleStateMachineWithRestartAndO1
-
-from state_machine_solver import StateMachineSolver
-from dotenv import load_dotenv
-
-from task_utils import get_tasks
 from dataset import LocalDataset, KaggleDataset
-
-warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
-
 from experimenter import experiment
 
-load_dotenv(".secrets")
+from state_machine_solver import StateMachineSolver
+from state_machine_multi_solver import StateMachineMultiSolver, StateMachineSolverWithRestart
+
+from simple_state_machine_distinct_pairs import SimpleStateMachineDistinctPairs
+from simple_state_machine_distinct_pairs_with_tools import SimpleStateMachineDistinctPairswithTools
+
+from simple_lens_state_machine import SimpleLensStateMachine
+from simple_state_machine_all_in_one import SimpleStateMachineAllInOne
+from simple_state_machine_single_pair import SimpleStateMachineSinglePair
+from simple_state_machine_one_state import SimpleStateMachineOneState
+from simple_state_machine_with_restart import SimpleStateMachineWithRestart
+from simple_state_machine_with_o1 import SimpleStateMachineWithO1
+
 
 LOG_DIR = Path('logs') / datetime.now().strftime('%Y%m%d-%H%M%S')
 
-def crappy_solve(task_id, dataset, num_beams, log_dir):
+def crappy_solve(task_id, dataset, log_dir):
     print('crap')
     return task_id, dataset, log_dir, []
 
 if __name__ == "__main__":
-    # task_ids = ["c8f0f002",'952a094c'] # very easy, very hard
-    task_ids = ['952a094c']
+    t1 = ["c8f0f002",'952a094c'] # very easy, very hard
+    t1_easy = ['c8f0f002'] # the easy
+    t1_hard = ['952a094c'] # o1 experiments, the hard
+
+    t_color_hallow = ['b2862040']
+    
+    hard_ids = ["beb8660c", "72ca375d", "82819916", "b2862040", "846bdb03", "855e0971", "05269061", "72322fa7", 
+        "56dc2b01", "6d75e8bb"]
+    average_ids = ["91714a58", "50cb2852", "a61f2674", "85c4e7cd", "d0f5fe59", "49d1d64f", "b60334d2", "d511f180", 
+        "e98196ab", "56ff96f3"]
+    simple_ids = ["623ea044", "4347f46a", "d4a91cb9", "913fb3ed", "d631b094"]
+    super_simple_ids = ["ce22a75a", "c8f0f002"]
+    pre_dealine_mix = hard_ids + average_ids + simple_ids + super_simple_ids
+    
+    tX = ['50cb2852'] #jsonl error at http://127.0.0.1:5000/#logs/20241106-201845/50cb2852/1.full.md
+    
+    for_dsl = ['beb8660c', '85c4e7cd', 'a2fd1cf0']
+
+    # task_ids = pre_dealine_mix
+    task_ids = t_color_hallow
+
+
     # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
     # task_ids = get_tasks(dataset)
@@ -52,7 +76,7 @@ if __name__ == "__main__":
     #           '7ddcd7ec', 'b27ca6d3', '6aa20dc0', 'b527c5c6', '25ff71a9', '6e02f1e3', 'c1d99e64', '97a05b5b']
     # task_ids = ['dc1df850', '49d1d64f', 'bb43febb']
     # task_ids = ['ce22a75a', '49d1d64f']
-    state_machine_solver = StateMachineSolver(SimpleStateMachineWithRestartAndO1)
+    
     # task_ids = ['4258a5f9', '5582e5ca', '623ea044', '913fb3ed', '445eab21', 'd4a91cb9','23581191', 'e9afcf9a'
     #             'd364b489', '68b16354', 'd631b094', 'a2fd1cf0', "4347f46a", "4be741c5", "d23f8c26", "42a50994",
     #             "a416b8f3", "3618c87e", "ea786f4a", "aabf363d", "b6afb2da", "bdad9b1f", "a699fb00", "50cb2852", "49d1d64f", "b60334d2", "aedd82e4",
@@ -61,8 +85,18 @@ if __name__ == "__main__":
     # "e98196ab", "85c4e7cd", "a740d043", "6f8cd79b", "1cf80156", "dc1df850",
     # "d511f180", "bb43febb", "27a28665", "44f52bb0", "e9614598", "bda2d7a6", "d4469b4b"
     #             ] # the ones with a "signal" what ever that means!
+    
+    # state_machine_solver = StateMachineSolver(SimpleStateMachineOneState)
+    # state_machine_solver = StateMachineSolver(SimpleStateMachineWithO1)
+    # state_machine_solver = StateMachineSolver(SimpleStateMachineWithRestart)
+    # state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairs)
+
+    # state_machine_solver = StateMachineMultiSolver([
+    #     SimpleStateMachineAllInOne, SimpleStateMachineSinglePair])
+    state_machine_solver = StateMachineSolverWithRestart(SimpleStateMachineDistinctPairswithTools, 5)
+    # state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools)
+    
     dataset = LocalDataset('training')
     # dataset = KaggleDataset('arc-agi_training_challenges.json', "data/kaggle")
-    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=-1)
-
-
+    
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=6)

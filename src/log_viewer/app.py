@@ -4,19 +4,21 @@ from pathlib import Path
 from flask import Flask, render_template, jsonify, request
 import os
 import markdown
-from calc_logs_statistics import get_log_summary_by_experiments, get_log_summary_by_tasks, log_summary_to_ladder
+from calc_logs_statistics import get_log_summary_by_experiments, get_log_summary_by_tasks, task_summary_to_ladder
 from dataset import LocalDataset
 from image_utils import single_grid_to_base64
-from state_machine_solver_utils import run_code_read_outputs_with_timeout
+from state_machine_solver_utils import run_task_code_read_outputs_with_timeout
 
 app = Flask(__name__)
 
 current_file_directory = Path(__file__).parent
-log_root_dirs = [Path('important-run-logs'),Path('logs')]
-log_summary_task = get_log_summary_by_tasks(log_root_dirs)
-log_ladder = log_summary_to_ladder(log_summary_task)
+log_root_dirs = [Path('important-run-logs'), Path('logs')]
+
 
 def get_task_level(dataset, task_id):
+    log_summary_task = get_log_summary_by_tasks(log_root_dirs)
+    log_ladder = task_summary_to_ladder(log_summary_task)
+    
     if task_id not in log_summary_task[dataset]:
         return 'n/a'
     
@@ -32,6 +34,8 @@ def dictionary_order_iterator():
         
 @app.route('/task_summary')
 def task_summary():
+    log_summary_task = get_log_summary_by_tasks(log_root_dirs)
+    log_ladder = task_summary_to_ladder(log_summary_task)
     html = '''
 <style>
 .task-id {
@@ -61,6 +65,7 @@ def task_summary():
     
     html += f'<h1>Task summary based on aggregate of <i>{log_root_dirs}</i></h1>'
     html += '<h2>Legend</h2>'
+    html += '* after a task name ==> multiple md files (to see them got to the task page and select other md files)<br><br>'
     for (root_dir, log_id), rest in log_summary_exp.items():
         summary = ', '.join([f'{tr}: {len(task_ids)}' for tr, task_ids in sorted(rest.items(),key=tr_order)])
         html += f'<span class="exp">{log_id} ({summary}, {log_id_symbols[log_id]})</span>'
@@ -81,8 +86,9 @@ def task_summary():
             for task_id, log_ids in task_ids.items():
                 a_tags = []
                 for root_dir, log_id, score in sorted(log_ids):
+                    astrisc = '*' if len(list((Path(root_dir) / log_id / task_id).glob("*.full.md"))) > 1 else ''
                     a_class = 'succ' if score != 0 else 'fail'
-                    a_tags.append(f'<a class="{a_class}" href="/#{root_dir.name}/{log_id}/{task_id}/1.full.md">{log_id_symbols[log_id]}</a>')
+                    a_tags.append(f'<a class="{a_class}" href="/#{root_dir.name}/{log_id}/{task_id}/1.full.md">{log_id_symbols[log_id]}{astrisc}</a>')
                 a_tags_html = ', '.join(a_tags)
                 html += f'<span class="task"><span class="task-id">{task_id}</span> ({a_tags_html})</span> '
         html += '<hr>'
@@ -100,18 +106,28 @@ def experiment_summary():
     def tr_order(e):
         return ['not_in_results_json', 'success_ok', 'success_nok', 'error', 'timeout', 'n/a'].index(e[0])
     
-    html += f'<h1>Experiment summary based on aggregate of <i>{log_root_dirs}</i></h1><hr>'
+    html += f'<h1>Experiment summary based on aggregate of <i>{log_root_dirs}</i></h1>'
+    html += '* after a task name ==> multiple md files (to see them got to the task page and select other md files)<br><br>'
+
     for (root_dir, log_id), rest in log_summary_exp.items():
         summary = 'total: ' + str(sum(len(task_ids) for tr, task_ids in rest.items())) + ': '
         summary += ', '.join([f'{tr}: {len(task_ids)}' for tr, task_ids in sorted(rest.items(),key=tr_order)])
         html += f'<h2 id="{root_dir}-{log_id}">{root_dir}/{log_id} ({summary})</h2>'
+        
+        notes = ''
+        for a_root_dir in log_root_dirs:
+            notes_file = a_root_dir / log_id / 'notes.txt'
+            if notes_file.exists():
+                notes += f'<div><b>Notes:</b> {notes_file.read_text()} (<i>{notes_file.relative_to(a_root_dir.parent)}</i>)</div>'
+
+        html += notes
         for tr, task_ids in sorted(rest.items(),key=tr_order):
             if len(task_ids) == 0:
                 continue
             html += f'<h3>{tr}</h3>'
             for task_id in task_ids:
-                # Todo, hardcoded root dir
-                html += f'<a href="/#{root_dir}/{log_id}/{task_id}/1.full.md">{task_id}</a> '
+                astrisc = '*' if len(list((Path(root_dir) / log_id / task_id).glob("*.full.md"))) > 1 else ''
+                html += f'<a href="/#{root_dir}/{log_id}/{task_id}/1.full.md">{task_id} {astrisc}</a>&nbsp;&nbsp;'
         html += '<hr>'
 
     html += '''<script>const scrollTo = el => {
@@ -246,17 +262,40 @@ def md_test():
 
 @app.route('/solve_fn', methods=['GET', 'POST'])
 def solve_fn():
-    code = ''
+    dataset_ = request.form.get('dataset', 'training')
+    task_id_ = request.form.get('task_id', '')
+    code_ = ''
     html_content = ''
     if request.method == 'POST':
-        code = request.form.get('code', '')
-        # task_id = request.form.get('task_id', '')
-        outputs = run_code_read_outputs_with_timeout('952a094c', LocalDataset('training'), code.encode(), 10,
-                                       current_file_directory.parent/'state_machine_solver_code_runner.py')
+        code_ = request.form.get('code', '')
+        outputs = run_task_code_read_outputs_with_timeout(task_id_, LocalDataset(dataset_),
+                code_.encode(), 10, current_file_directory.parent/'state_machine_solver_code_runner.py')
         for obj in outputs:
             if 'text' in obj:
                 html_content += f'<div>{obj["text"]}</div>'
             elif 'grid' in obj:
                 html_content += f'<div><img src="data:image/jpeg;base64,{single_grid_to_base64(obj["grid"], draw_edges=False)}"></div>'
+        
+        html_content += '<pre>'
+        for obj in outputs:
+            html_content += f'<div>{obj}</div>'
+        html_content += '</pre>'
 
-    return render_template('solve_fn_index.html', code=code, html_content=html_content)
+    return render_template('solve_fn_index.html', dataset=dataset_, task_id=task_id_,
+        code=code_, html_content=html_content)
+
+@app.route('/any_md')
+def any_md():
+    html_content = ''
+    md_file = request.args.get('md_file', '')
+    if Path(md_file).exists():
+        md_content = Path(md_file).read_text()
+        html_content = markdown.markdown(
+            md_content,
+            tab_length=3,
+            extensions=['fenced_code', 'codehilite', 'nl2br']
+        )
+    else:
+        html_content = 'File not found.'
+
+    return html_content
