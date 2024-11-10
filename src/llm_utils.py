@@ -1,4 +1,7 @@
+import copy
+from io import IOBase
 import json
+from pathlib import Path
 import re
 import threading
 
@@ -56,15 +59,17 @@ def extract_code(assistant_reply):
     
 
 class HistoryManager:
-    def __init__(self, log_file=None):
-        self.messages = []
+    def __init__(self, log_file:Path|IOBase=None):
+        self.messages, self.ttls, self.tsts = [], [], []
         self._thread_local = threading.local()  # Thread-local storage
         self.log_file = log_file
 
-    def start_new_message(self, role, llm, log_at_end=True):
+    def start_new_message(self, role, llm, log_at_end=True, ttl=None, tst=None):
         self._thread_local.temp_role = role
         self._thread_local.temp_llm = llm
         self._thread_local.temp_log_at_end = log_at_end
+        self._thread_local.temp_ttl = ttl
+        self._thread_local.temp_tst = tst
         return self
 
     def __enter__(self):
@@ -78,13 +83,15 @@ class HistoryManager:
                 'content': self._thread_local.temp_content
             }
             self.messages.append(message)
+            self.ttls.append(self._thread_local.temp_ttl)
+            self.tsts.append(self._thread_local.temp_tst)        
             if self._thread_local.temp_log_at_end and self.log_file is not None:
                 add_string_to_log(message_to_md(message, False, self._thread_local.temp_llm),
                     self.log_file)
 
 
-    def add_singletone_text_message(self, role, text, llm):
-        with self.start_new_message(role, llm):
+    def add_singletone_text_message(self, role, text, llm, log_at_end=True, ttl=None, tst=None):
+        with self.start_new_message(role, llm, log_at_end, ttl, tst):
             self.add_text(text)
         
     def add_image(self, grid):
@@ -107,12 +114,26 @@ class HistoryManager:
             'text': text
         })
 
-    def get_messages(self):
-        return self.messages
-    
-    def chat_with_llm(self, llm, resp_format=None):
-        return chat_with_llm(self.get_messages(), llm, resp_format)
+    def get_messages(self, cur_tst=None):
+        if cur_tst is None:
+            return self.messages
+        assert len(self.messages) == len(self.ttls) == len(self.tsts)
+        return [msg for msg, ttl, tst in zip(self.messages, self.ttls, self.tsts)
+            if ttl == None or tst == None or ttl >= cur_tst - tst]
         
+    def pop_messages(self, num_to_pop):
+        del self.messages[-num_to_pop:]
+        del self.ttls[-num_to_pop:]
+        del self.tsts[-num_to_pop:]
+   
+    def set_ttl_last_pair(self, one_before_last_ttl, last_ttl):
+        self.ttls[-2], self.ttls[-1] = one_before_last_ttl, last_ttl
+
+    def set_ttl_last_elem(self, last_ttl):
+        self.ttls[-1] = last_ttl
+
+    def chat_with_llm(self, llm, resp_format=None, cur_tst=None):
+        return chat_with_llm(self.get_messages(cur_tst=cur_tst), llm, resp_format)
 
 def chat_with_llm(messages, llm, resp_format=None):
     if resp_format is None:

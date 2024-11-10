@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     # state_machine_solver = StateMachineMultiSolver([
     #     SimpleStateMachineAllInOne, SimpleStateMachineSinglePair])
-    state_machine_solver = StateMachineSolverWithRestart(SimpleStateMachineDistinctPairswithTools, 5)
+    state_machine_solver = StateMachineSolverWithRestart(SimpleStateMachineDistinctPairswithTools, 1)
     # state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools)
     
     dataset = LocalDataset('training')

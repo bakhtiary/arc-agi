@@ -30,7 +30,6 @@ class StateMachineSolver:
         history_manager.add_singletone_text_message('system', 
             'You are an intelligent assistant and a Python expert.', 'any-llm')
 
-        
         round_no = -1
         while cur_state_name:            
             print(cur_state_name)
@@ -43,10 +42,13 @@ class StateMachineSolver:
                     pre_work_func()
             
             llm = cur_state['llm']() if 'llm' in cur_state else DEFAULT_LLM
+            any_message_sent = False
             if 'message_to_send' in cur_state:
-                self.add_state_machine_messages(cur_state['message_to_send'], llm, history_manager)                
-                response = self.chat_with_llm(history_manager, llm)
-                history_manager.add_singletone_text_message('assistant', response, llm)
+                round_no += 1
+                any_message_sent = self.add_state_machine_messages(
+                    cur_state['message_to_send'], llm, history_manager, tst=round_no)                
+                response = self.chat_with_llm(history_manager, llm, cur_tst=round_no)
+                history_manager.add_singletone_text_message('assistant', response, llm, tst=round_no)
                 
             if 'do_work' in cur_state:
                 do_work_funcs = callable_as_list(cur_state['do_work'])
@@ -54,8 +56,21 @@ class StateMachineSolver:
                     do_work_func(response)
 
             # if 'message_to_send' in cur_state:
-            #     if 'message_ttl' in cur_state:
-            #         ttls[-1], ttls[-2]  = cur_state['message_ttl']()
+                # We Don't want this: we want a **moving** windows, such as a queue
+                # if 'keep_last_pair_of_messages' in cur_state:
+                #     if not cur_state['keep_last_pair_of_messages']():
+                #         if any_message_sent:
+                #             history_manager.pop_messages(2)
+                #         else:
+                #             history_manager.pop_messages(1)
+
+            if 'message_to_send' in cur_state:
+                if 'message_ttl' in cur_state:
+                    one_before_last_ttl, last_ttl = cur_state['message_ttl']()
+                    if any_message_sent:
+                        history_manager.set_ttl_last_pair(one_before_last_ttl, last_ttl)
+                    else:
+                        history_manager.set_ttl_last_elem(last_ttl)
                         
             next_state_name = cur_state['next_state']
             if next_state_name is None or isinstance(next_state_name, str):
@@ -67,8 +82,9 @@ class StateMachineSolver:
 
         return task_id, dataset, log_file, cur_state_machine.solution
 
-    def add_state_machine_messages(self, cur_state_messages, llm, history_manager):
-        with history_manager.start_new_message('user', llm):                    
+    def add_state_machine_messages(self, cur_state_messages, llm, history_manager: HistoryManager, tst=None):
+        any_message_added = False
+        with history_manager.start_new_message('user', llm, tst=tst):                    
             state_message_funcs = callable_as_list(cur_state_messages)
             for state_message_func in state_message_funcs:
                 state_message_ret = state_message_func()
@@ -79,16 +95,22 @@ class StateMachineSolver:
                         
                 assert state_message_type in ['image', 'text', 'list']
                 if state_message_type == 'image':
-                    history_manager.add_image(state_message)                         
+                    history_manager.add_image(state_message)
+                    any_message_added = True
                 elif state_message_type == 'text':
                     history_manager.add_text(state_message)
+                    any_message_added = True
                 elif state_message_type == 'list': # state_message itself is a list of tuples
                     for state_message_type, state_message  in state_message:
                         assert state_message_type in ['image', 'text']
                         if state_message_type == 'image':
-                            history_manager.add_image(state_message)                         
+                            history_manager.add_image(state_message)
+                            any_message_added = True
                         elif state_message_type == 'text':
                             history_manager.add_text(state_message)
+                            any_message_added = True
+        
+        return any_message_added
 
-    def chat_with_llm(self, history_manager: HistoryManager, llm: str):
-        return history_manager.chat_with_llm(llm)
+    def chat_with_llm(self, history_manager: HistoryManager, llm: str, cur_tst=None):
+        return history_manager.chat_with_llm(llm, cur_tst=cur_tst)
