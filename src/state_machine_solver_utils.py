@@ -12,7 +12,7 @@ def extract_solve_fn(assistant_reply):
     code_blocks = re.findall(r'```(?:python)?\n(.*?)```', assistant_reply, re.DOTALL)
     for code_block in code_blocks:
         if 'def solve' in code_block:
-            return code_block
+            return code_block.strip()
     return None
 
 def extract_and_run_mapping_code(response, task_id: str, dataset: Dataset, tool_codes=None):

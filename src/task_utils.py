@@ -2,12 +2,6 @@ import os
 from pathlib import Path
 from random import Random
 
-DATA_DIR = Path('data')
-
-def get_tasks(dataset):
-    files = os.listdir(str(DATA_DIR / dataset))
-    return [f.split(".")[0] for f in files]
-
 def get_task_mix(dataset, seed=42, **groups):
     task_score_groups = get_task_score_groups(dataset)
     task_ids = []
@@ -21,6 +15,7 @@ def get_task_mix(dataset, seed=42, **groups):
 def calc_score(task_id, dataset, solutions, detailed):
     if solutions is None:
         return 0
+    
     task = dataset.read_task(task_id)
     test_input_grids = task['test']
     if isinstance(test_input_grids, dict) and 'input' in test_input_grids:
@@ -33,11 +28,20 @@ def calc_score(task_id, dataset, solutions, detailed):
                 tot += 1
                 if pair['output'] == solution:            
                     sum_score += 1
-        return sum_score / tot
+        if tot != 0:
+            return sum_score / tot
+        else:
+            return None
     
     else:
+        has_output = False
         for pair, solution in zip(test_input_grids, solutions):
-            if 'output' in pair and pair['output'] != solution:
-                return 0
+            if 'output' in pair:
+                has_output = True
+                if pair['output'] != solution:
+                    return 0
         
-        return 1
+        if has_output:
+            return 1
+        else:
+            return 0

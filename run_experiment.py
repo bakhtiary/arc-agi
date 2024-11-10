@@ -7,10 +7,11 @@
 from datetime import datetime
 from pathlib import Path
 import warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
 
+from llm_utils import LiteLLMInterface
+warnings.filterwarnings('ignore', category=UserWarning, module='pydantic.main')
 from dotenv import load_dotenv
-load_dotenv(".secrets")
+load_dotenv('.secrets')
 
 import litellm
 litellm.drop_params=True
@@ -38,8 +39,33 @@ def crappy_solve(task_id, dataset, log_dir):
     print('crap')
     return task_id, dataset, log_dir, []
 
-if __name__ == "__main__":
-    t1 = ["c8f0f002",'952a094c'] # very easy, very hard
+# No lambda because --> Can't pickle <function <lambda> at ...
+# Not local to local_main because --> Can't pickle local object 'local_main.<locals>.factory'
+def SimpleStateMachineDistinctPairswithTools_factory(task_id, dataset):
+    result = SimpleStateMachineDistinctPairswithTools(task_id, dataset, which_pairs='all')
+    result.max_num_failed = 1
+    return result
+
+def kaggle_main():
+    from local_llm_interface import QwenLocalLLMInterface
+ 
+    llm_interface = QwenLocalLLMInterface(timeout_seconds=1)
+
+    state_machine_solver = StateMachineSolverWithRestart(SimpleStateMachineDistinctPairswithTools_factory, llm_interface, num_restarts=1)
+
+    dataset = LocalDataset('training')
+    # dataset = KaggleDataset('arc-agi_test_challenges.json', 'data/kaggle')
+
+    task_ids = dataset.get_all_task_ids()
+    t1_easy = ['c8f0f002'] # the easy
+
+    task_ids = task_ids[:10]
+
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=6, timeout_seconds=10)
+
+
+def local_main():
+    t1 = ['c8f0f002','952a094c'] # very easy, very hard
     t1_easy = ['c8f0f002'] # the easy
     t1_hard = ['952a094c'] # o1 experiments, the hard
 
@@ -47,26 +73,25 @@ if __name__ == "__main__":
     t_is_hole = ['b2862040']
     t_order_bars_by_color = ['beb8660c']
     
-    hard_ids = ["beb8660c", "72ca375d", "82819916", "b2862040", "846bdb03", "855e0971", "05269061", "72322fa7", 
-        "56dc2b01", "6d75e8bb"]
-    average_ids = ["91714a58", "50cb2852", "a61f2674", "85c4e7cd", "d0f5fe59", "49d1d64f", "b60334d2", "d511f180", 
-        "e98196ab", "56ff96f3"]
-    simple_ids = ["623ea044", "4347f46a", "d4a91cb9", "913fb3ed", "d631b094"]
-    super_simple_ids = ["ce22a75a", "c8f0f002"]
+    hard_ids = ['beb8660c', '72ca375d', '82819916', 'b2862040', '846bdb03', '855e0971', '05269061', '72322fa7', 
+        '56dc2b01', '6d75e8bb']
+    average_ids = ['91714a58', '50cb2852', 'a61f2674', '85c4e7cd', 'd0f5fe59', '49d1d64f', 'b60334d2', 'd511f180', 
+        'e98196ab', '56ff96f3']
+    simple_ids = ['623ea044', '4347f46a', 'd4a91cb9', '913fb3ed', 'd631b094']
+    super_simple_ids = ['ce22a75a', 'c8f0f002']
     pre_dealine_mix = hard_ids + average_ids + simple_ids + super_simple_ids
     
     tX = ['50cb2852'] #jsonl error at http://127.0.0.1:5000/#logs/20241106-201845/50cb2852/1.full.md
     
     for_dsl = ['beb8660c', '85c4e7cd', 'a2fd1cf0']
 
+    task_ids = t1_easy
     # task_ids = pre_dealine_mix
-    task_ids = t_order_bars_by_color
-
+    # task_ids = t_order_bars_by_color
+    # task_ids = pre_dealine_mix
 
     # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
-    # task_ids = get_tasks(dataset)
-    # task_ids = get_task_mix('training', simple=10, hard=10)
     # task_ids = ['c8f0f002', '623ea044', 'a2fd1cf0', 'd4a91cb9', 'ce22a75a', '23581191', '913fb3ed', 'b1948b0a',
     #             'b6afb2da', '27a28665', '4258a5f9', 'e9afcf9a', 'd23f8c26', '42a50994','ea786f4a', '91714a58', '4be741c5', '50cb2852', '5582e5ca', 'a61f2674', '85c4e7cd', 'd0f5fe59',
     #              'd364b489', '49d1d64f', 'd511f180', '56ff96f3', '6f8cd79b', 'd4469b4b', '5614dbcf', 'aedd82e4',
@@ -80,13 +105,15 @@ if __name__ == "__main__":
     # task_ids = ['ce22a75a', '49d1d64f']
     
     # task_ids = ['4258a5f9', '5582e5ca', '623ea044', '913fb3ed', '445eab21', 'd4a91cb9','23581191', 'e9afcf9a'
-    #             'd364b489', '68b16354', 'd631b094', 'a2fd1cf0', "4347f46a", "4be741c5", "d23f8c26", "42a50994",
-    #             "a416b8f3", "3618c87e", "ea786f4a", "aabf363d", "b6afb2da", "bdad9b1f", "a699fb00", "50cb2852", "49d1d64f", "b60334d2", "aedd82e4",
-    # "1f876c06", "5614dbcf", "be94b721", "91714a58", "f25ffba3", "c9f8e694",
-    # "d0f5fe59", "56ff96f3", "a9f96cdd", "253bf280", "2dee498d", "a61f2674",
-    # "e98196ab", "85c4e7cd", "a740d043", "6f8cd79b", "1cf80156", "dc1df850",
-    # "d511f180", "bb43febb", "27a28665", "44f52bb0", "e9614598", "bda2d7a6", "d4469b4b"
-    #             ] # the ones with a "signal" what ever that means!
+    #             'd364b489', '68b16354', 'd631b094', 'a2fd1cf0', '4347f46a', '4be741c5', 'd23f8c26', '42a50994',
+    #             'a416b8f3', '3618c87e', 'ea786f4a', 'aabf363d', 'b6afb2da', 'bdad9b1f', 'a699fb00', '50cb2852', '49d1d64f', 'b60334d2', 'aedd82e4',
+    # '1f876c06', '5614dbcf', 'be94b721', '91714a58', 'f25ffba3', 'c9f8e694',
+    # 'd0f5fe59', '56ff96f3', 'a9f96cdd', '253bf280', '2dee498d', 'a61f2674',
+    # 'e98196ab', '85c4e7cd', 'a740d043', '6f8cd79b', '1cf80156', 'dc1df850',
+    # 'd511f180', 'bb43febb', '27a28665', '44f52bb0', 'e9614598', 'bda2d7a6', 'd4469b4b'
+    #             ] # the ones with a 'signal' what ever that means!
+    
+    llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='o1-mini')
     
     # state_machine_solver = StateMachineSolver(SimpleStateMachineOneState)
     # state_machine_solver = StateMachineSolver(SimpleStateMachineWithO1)
@@ -95,10 +122,16 @@ if __name__ == "__main__":
 
     # state_machine_solver = StateMachineMultiSolver([
     #     SimpleStateMachineAllInOne, SimpleStateMachineSinglePair])
-    state_machine_solver = StateMachineSolverWithRestart(SimpleStateMachineDistinctPairswithTools, 1)
+    
+
+    state_machine_solver = StateMachineSolverWithRestart(SimpleStateMachineDistinctPairswithTools_factory, llm_interface, num_restarts=1)
     # state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools)
     
     dataset = LocalDataset('training')
-    # dataset = KaggleDataset('arc-agi_training_challenges.json', "data/kaggle")
     
-    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=-1)
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=6)
+
+
+if __name__ == '__main__':
+    kaggle_main()
+    # local_main()

@@ -6,7 +6,7 @@ import warnings
 
 from dataset import LocalDataset
 from llm_tool_writer_utils import extract_func_name_from_signature
-from llm_utils import HistoryManager
+from llm_utils import HistoryManager, LLMInterface, LiteLLMInterface, chat_with_llm
 from simple_state_machine_distinct_pairs_with_tools import SimpleStateMachineDistinctPairswithTools
 from state_machine_solver import StateMachineSolver
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
@@ -39,12 +39,14 @@ if __name__ == "__main__":
     history_manager = HistoryManager(log_file)
     state_machine = SimpleStateMachineDistinctPairswithTools(task_id, dataset)
     cur_state = state_machine.states['entry_point']
-    state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools)
+    llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='gpt-4o')
+    state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools, llm_interface)
     state_machine_solver.add_state_machine_messages(cur_state['message_to_send'],
         DEFAULT_LLM, history_manager)
-    hypothesis = state_machine_solver.chat_with_llm(history_manager, DEFAULT_LLM)
     
-    llm_tool_writer_ = LLMToolWriter(log_file=log_file)
+    hypothesis = chat_with_llm(llm_interface, history_manager, LLMInterface.TEXT_ADVANCED) 
+    
+    llm_tool_writer_ = LLMToolWriter(llm_interface, log_file=log_file)
     funcs = llm_tool_writer_.get_tools_summaries(hypothesis, num_beams=1)
     print('\n'.join(funcs))
 

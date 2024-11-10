@@ -10,7 +10,7 @@ class FuncsListResponse(BaseModel):
 
 
 from llm_tool_writer_utils import extract_and_run_tool_code, extract_func_code_from_full_src, extract_func_name_from_signature, is_tool_writer_run_success
-from llm_utils import HistoryManager, extract_code
+from llm_utils import HistoryManager, LLMInterface, chat_with_llm
 
 DEFAULT_LLM = 'gpt-4o'
 example_transformation_desc='''To analyze the transformations between the input and output grids, let's examine each pair of grids:
@@ -54,8 +54,9 @@ change_color_of_shape(shape: List[Tuple[int, int, int]], new_color: int) -> List
 
 
 class LLMToolWriter:
-    def __init__(self, log_file=None):
+    def __init__(self, llm_interface: LLMInterface, log_file=None):
         self.log_file = log_file
+        self.llm_interface = llm_interface
         self.max_num_failed = 5
     
     def __call__(self, desc: str):
@@ -110,7 +111,8 @@ keeping the annotations, and  placing each function on its own line.'''
             'You are an intelligent assistant and a Python expert.', '|any-llm|')
             
         history_manager.add_singletone_text_message('user', final_prompt, DEFAULT_LLM)
-        func_list_final = history_manager.chat_with_llm(DEFAULT_LLM, FuncsListResponse)
+        func_list_final = chat_with_llm(self.llm_interface,
+                history_manager, LLMInterface.TEXT_ADVANCED, resp_format=FuncsListResponse)
         if func_list_final:
             print('\n'.join(func_list_final.func_list))
             return func_list_final.func_list
@@ -121,18 +123,6 @@ keeping the annotations, and  placing each function on its own line.'''
             
         return []
         
-        # for num_failed in range(self.max_num_failed):
-        #     assistant_reply = history_manager.chat_with_llm(DEFAULT_LLM)
-        #     history_manager.add_singletone_text_message('assistant', resp, DEFAULT_LLM)
-        #     if '<FUNCTIONS>' not in resp:
-        #         history_manager.add_singletone_text_message('user',
-        #             '<FUNCTIONS> not found in your response. Please send your response with the correct format.', DEFAULT_LLM)                
-        #         num_failed += 1
-        #     else:
-        #         funcs = resp.split('<FUNCTIONS>')[1].splitlines()
-        #         break
-        # return funcs
-
     def get_tools_summaries_one_beam(self, desc: str, shots=0):
         prompt_0_shot = f''' # Task description
 You need to extract useful tools (Python functions) that are helpful in composing a program that
@@ -187,7 +177,7 @@ grid is transformed to an output grid. An LLM like you wants to write a Python f
         
         # Using structured outputs (https://github.com/BerriAI/litellm/issues/5074), not very helpful responces
         # 
-        func_list = history_manager.chat_with_llm(DEFAULT_LLM, FuncsListResponse)
+        func_list = chat_with_llm(self.llm_interface, history_manager, LLMInterface.TEXT_ADVANCED, resp_format=FuncsListResponse)
         if func_list:
             return func_list.func_list
 
@@ -213,7 +203,7 @@ Note:
         
         num_failed = 0
         while num_failed < self.max_num_failed:
-            assistant_reply = history_manager.chat_with_llm(DEFAULT_LLM)
+            assistant_reply = chat_with_llm(self.llm_interface, history_manager, LLMInterface.TEXT_ADVANCED)
             history_manager.add_singletone_text_message('assistant', assistant_reply, DEFAULT_LLM)
             
             if f'def {func_name}' not in assistant_reply:

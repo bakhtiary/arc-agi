@@ -3,11 +3,14 @@ from pathlib import Path
 from grid_utils import get_grid_sizes, AKGrid
 from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from llm_tool_writer import LLMToolWriter
+from llm_utils import LLMInterface
 from state_machine_solver_utils import extract_and_run_mapping_code
 from tools_example import tools_example
 
+current_file_dir = Path(__file__).parent
+
 class SimpleStateMachineDistinctPairswithTools:
-    def __init__(self, task_id, dataset):
+    def __init__(self, task_id, dataset, which_pairs: str|list[int]='all'):
         self.start_state = 'entry_point'
         self.phase = 'all_in_one'
         self.states = {}
@@ -16,9 +19,9 @@ class SimpleStateMachineDistinctPairswithTools:
         self.task_id = task_id
         self.task = dataset.read_task(task_id)
         self.solution: list[AKGrid] = None # one solution for each test case
-        self.max_num_failed = 5
+        self.max_num_failed = 10
         self.num_failed = 0
-        self.which_pairs: str|list[int] = 'all'
+        self.which_pairs = which_pairs
         self.tools: list[dict]  = None # each tool is a dict {'name': 'f', 'signature': 'def f ...', 'code': 'import xx;\n...'}
         self.hypothesis = None
         
@@ -57,6 +60,7 @@ They are available in the executation context.
 '''
             ],
             do_work=self.extract_and_run_mapping_code,
+            llm=lambda: LLMInterface.TEXT_ADVANCED,
             next_state=lambda response: 'success' if self.is_last_run_success() else 'mapping_code_failed'
         )
 
@@ -66,6 +70,7 @@ They are available in the executation context.
                 lambda: ('list', self.send_last_run_results())
             ],
             do_work=self.extract_and_run_mapping_code,
+            llm=lambda: LLMInterface.TEXT_ADVANCED,
             message_ttl=lambda: [1,1],
             next_state=lambda response: self.mapping_code_failed_next_state(response)            
         )
@@ -84,7 +89,7 @@ They are available in the executation context.
 
     def extract_and_run_mapping_code(self, response):
         # tools_codes = '\n'.join(v['code'] for v in self.tools.values())
-        tools_codes = Path('tools_extracted_mini.py').read_text()
+        tools_codes = Path(current_file_dir / 'tools_src_mini.py').read_text()
         
         response = f'```\n{tools_codes}\n```\n\n' + response
         results = extract_and_run_mapping_code(response, self.task_id, self.dataset)

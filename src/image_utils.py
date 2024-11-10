@@ -6,9 +6,7 @@ import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
-
-from task_utils import get_tasks
-from dataset import LocalDataset
+from PIL import Image
 
 ARC_COLORS = [
     '#000',
@@ -23,6 +21,15 @@ ARC_COLORS = [
     '#870C25',  # /* brown */
 ]
 arc_cmap = ListedColormap(ARC_COLORS)
+
+def pil_image_to_base64(image: Image) -> str:
+    buffered = io.BytesIO()
+    image.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode()
+
+def base64_to_pil_image(base64_str: str) -> Image:
+    buffered = base64.b64decode(base64_str)
+    return Image.open(io.BytesIO(buffered), formats=["PNG"])
 
 def single_grid_to_base64(grid, draw_edges=True, draw_spine_border=False) -> str:
     fig, ax = plt.subplots()
@@ -43,7 +50,7 @@ def grids_all_in_one_to_base64(all_pairs, draw_edges=True, draw_spine_border=Fal
 
 def current_figure_to_base64():
     bytes_io = io.BytesIO()
-    plt.savefig(bytes_io, format='jpg', bbox_inches='tight')
+    plt.savefig(bytes_io, format='png', bbox_inches='tight')
     bytes_io.seek(0)
     base64_data = base64.b64encode(bytes_io.read()).decode()
     return base64_data    

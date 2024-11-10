@@ -1,10 +1,8 @@
-from llm_utils import HistoryManager
+from llm_utils import HistoryManager, LLMInterface, chat_with_llm
 from log_utils import create_empty_log, add_string_to_log
 
 AKGrid = list[list[int]]
 AKGridTuple = tuple[tuple[tuple[int]]]
-
-DEFAULT_LLM='gpt-4o'
 
 def callable_as_list(obj):
     if isinstance(obj, list):
@@ -14,8 +12,9 @@ def callable_as_list(obj):
         return [obj]
 
 class StateMachineSolver:
-    def __init__(self,state_machine_class):
+    def __init__(self, state_machine_class, llm_interface: LLMInterface):
         self.state_machine_class = state_machine_class
+        self.llm_interface = llm_interface
 
     def __call__(self, task_id, dataset, log_dir, log_file=None): # --> task_id, dataset, log_file, solutions
         # task = dataset.read_task(task_id)
@@ -41,13 +40,13 @@ class StateMachineSolver:
                 for pre_work_func in pre_work_funcs:
                     pre_work_func()
             
-            llm = cur_state['llm']() if 'llm' in cur_state else DEFAULT_LLM
+            llm = cur_state['llm']() if 'llm' in cur_state else 'vision'
             any_message_sent = False
             if 'message_to_send' in cur_state:
                 round_no += 1
                 any_message_sent = self.add_state_machine_messages(
                     cur_state['message_to_send'], llm, history_manager, tst=round_no)                
-                response = self.chat_with_llm(history_manager, llm, cur_tst=round_no)
+                response = chat_with_llm(self.llm_interface, history_manager, llm, cur_tst=round_no)
                 history_manager.add_singletone_text_message('assistant', response, llm, tst=round_no)
                 
             if 'do_work' in cur_state:
@@ -82,7 +81,7 @@ class StateMachineSolver:
 
         return task_id, dataset, log_file, cur_state_machine.solution
 
-    def add_state_machine_messages(self, cur_state_messages, llm, history_manager: HistoryManager, tst=None):
+    def add_state_machine_messages(self, cur_state_messages, llm: str, history_manager: HistoryManager, tst=None):
         any_message_added = False
         with history_manager.start_new_message('user', llm, tst=tst):                    
             state_message_funcs = callable_as_list(cur_state_messages)
@@ -111,6 +110,3 @@ class StateMachineSolver:
                             any_message_added = True
         
         return any_message_added
-
-    def chat_with_llm(self, history_manager: HistoryManager, llm: str, cur_tst=None):
-        return history_manager.chat_with_llm(llm, cur_tst=cur_tst)
