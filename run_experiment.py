@@ -43,7 +43,9 @@ if __name__ == "__main__":
     t1_easy = ['c8f0f002'] # the easy
     t1_hard = ['952a094c'] # o1 experiments, the hard
 
-    t_color_hallow = ['b2862040']
+
+    t_is_hole = ['b2862040']
+    t_order_bars_by_color = ['beb8660c']
     
     hard_ids = ["beb8660c", "72ca375d", "82819916", "b2862040", "846bdb03", "855e0971", "05269061", "72322fa7", 
         "56dc2b01", "6d75e8bb"]
@@ -58,7 +60,7 @@ if __name__ == "__main__":
     for_dsl = ['beb8660c', '85c4e7cd', 'a2fd1cf0']
 
     # task_ids = pre_dealine_mix
-    task_ids = t_color_hallow
+    task_ids = t_order_bars_by_color
 
 
     # task_ids = ['ce22a75a'] # uses lens code alot
@@ -99,4 +101,4 @@ if __name__ == "__main__":
     dataset = LocalDataset('training')
     # dataset = KaggleDataset('arc-agi_training_challenges.json', "data/kaggle")
     
-    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=6)
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=-1)

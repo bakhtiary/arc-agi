@@ -32,4 +32,4 @@ def extract_func_name_from_signature(signature: str) -> str:
 
 def extract_func_code_from_full_src(func_name: str, full_src: str):
     # TODO: improve
-    return full_src
+    return extract_code(full_src)

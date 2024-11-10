@@ -64,15 +64,14 @@ class LLMToolWriter:
         else:
             print(f'LLMToolWriter: Live view not available. Pass `log_file` to `__init__`')
 
-        results = {}
+        results = []
         func_signatures = self.get_tools_summaries(desc, num_beams=1)
         for func_signature in func_signatures:            
             func_name = extract_func_name_from_signature(func_signature)
             print(f'Getting code for {func_name}: {func_signature}')
             func_code = self.get_tool_with_tests(func_name, func_signature)
             if func_code:
-                func_code_ = extract_func_code_from_full_src(func_name, func_code)
-                results[func_name] = {'signature': func_signature, 'code': func_code_}
+                results.append({'name': func_name, 'signature': func_signature, 'code': func_code})
         return results
 
     def get_tools_summaries(self, desc: str, num_beams=3) -> list[str]:
@@ -84,6 +83,12 @@ class LLMToolWriter:
             if func_list:
                 func_lists.append(func_list)
         
+        if len(func_lists) == 0:
+            return []
+        elif len(func_lists) == 1:
+            return func_lists[0]
+
+
         tries_str = ''
         print('Getting summaries')
         for i, func_list in enumerate(func_lists, 1):

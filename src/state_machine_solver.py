@@ -6,6 +6,13 @@ AKGridTuple = tuple[tuple[tuple[int]]]
 
 DEFAULT_LLM='gpt-4o'
 
+def callable_as_list(obj):
+    if isinstance(obj, list):
+        return obj
+    else:
+        assert callable(obj)
+        return [obj]
+
 class StateMachineSolver:
     def __init__(self,state_machine_class):
         self.state_machine_class = state_machine_class
@@ -23,13 +30,7 @@ class StateMachineSolver:
         history_manager.add_singletone_text_message('system', 
             'You are an intelligent assistant and a Python expert.', 'any-llm')
 
-        def callable_as_list(obj):
-            if isinstance(obj, list):
-                return obj
-            else:
-                assert callable(obj)
-                return [obj]
-
+        
         round_no = -1
         while cur_state_name:            
             print(cur_state_name)
@@ -43,29 +44,7 @@ class StateMachineSolver:
             
             llm = cur_state['llm']() if 'llm' in cur_state else DEFAULT_LLM
             if 'message_to_send' in cur_state:
-                with history_manager.start_new_message('user', llm):
-                    state_message_funcs = callable_as_list(cur_state['message_to_send'])
-                    for state_message_func in state_message_funcs:
-                        state_message_ret = state_message_func()
-                        if isinstance(state_message_ret, tuple):
-                            state_message_type, state_message = state_message_ret
-                        else:
-                            state_message_type, state_message = 'text', state_message_ret
-                        
-                        assert state_message_type in ['image', 'text', 'list']
-                        if state_message_type == 'image':
-                            history_manager.add_image(state_message)                         
-                        elif state_message_type == 'text':
-                            history_manager.add_text(state_message)
-                        elif state_message_type == 'list': # state_message itself is a list of tuples
-                            for state_message_type, state_message  in state_message:
-                                assert state_message_type in ['image', 'text']
-                                if state_message_type == 'image':
-                                    history_manager.add_image(state_message)                         
-                                elif state_message_type == 'text':
-                                    history_manager.add_text(state_message)
-
-                
+                self.add_state_machine_messages(cur_state['message_to_send'], llm, history_manager)                
                 response = self.chat_with_llm(history_manager, llm)
                 history_manager.add_singletone_text_message('assistant', response, llm)
                 
@@ -87,6 +66,29 @@ class StateMachineSolver:
         add_string_to_log(f"state machine finished, result is {cur_state_machine.solution}\n", log_file)
 
         return task_id, dataset, log_file, cur_state_machine.solution
+
+    def add_state_machine_messages(self, cur_state_messages, llm, history_manager):
+        with history_manager.start_new_message('user', llm):                    
+            state_message_funcs = callable_as_list(cur_state_messages)
+            for state_message_func in state_message_funcs:
+                state_message_ret = state_message_func()
+                if isinstance(state_message_ret, tuple):
+                    state_message_type, state_message = state_message_ret
+                else:
+                    state_message_type, state_message = 'text', state_message_ret
+                        
+                assert state_message_type in ['image', 'text', 'list']
+                if state_message_type == 'image':
+                    history_manager.add_image(state_message)                         
+                elif state_message_type == 'text':
+                    history_manager.add_text(state_message)
+                elif state_message_type == 'list': # state_message itself is a list of tuples
+                    for state_message_type, state_message  in state_message:
+                        assert state_message_type in ['image', 'text']
+                        if state_message_type == 'image':
+                            history_manager.add_image(state_message)                         
+                        elif state_message_type == 'text':
+                            history_manager.add_text(state_message)
 
     def chat_with_llm(self, history_manager: HistoryManager, llm: str):
         return history_manager.chat_with_llm(llm)

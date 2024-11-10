@@ -1,11 +1,10 @@
 from datetime import datetime
 from pathlib import Path
-from grid_utils import get_grid_sizes
+from grid_utils import get_grid_sizes, AKGrid
 from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from llm_tool_writer import LLMToolWriter
 from state_machine_solver_utils import extract_and_run_mapping_code
 from tools_example import tools_example
-
 
 class SimpleStateMachineDistinctPairswithTools:
     def __init__(self, task_id, dataset):
@@ -13,18 +12,20 @@ class SimpleStateMachineDistinctPairswithTools:
         self.phase = 'all_in_one'
         self.states = {}
         self.dataset = dataset
-        self.run_results = []
+        self.run_results: list[list[dict]] = [] # each run result is a list of dicts such as [{'text': xx}, {'grid': [[1]]}, ...]
         self.task_id = task_id
         self.task = dataset.read_task(task_id)
-        self.solution = None
+        self.solution: list[AKGrid] = None # one solution for each test case
         self.max_num_failed = 5
         self.num_failed = 0
-        self.which_pairs = 'all'
+        self.which_pairs: str|list[int] = 'all'
+        self.tools: list[dict]  = None # each tool is a dict {'name': 'f', 'signature': 'def f ...', 'code': 'import xx;\n...'}
+        self.hypothesis = None
         
         # starting with all-images (no bordrer), looking to features, ...
         self.states['entry_point'] = dict(
             message_to_send=[
-                lambda: 'The following images shows an example of a mapping  from an input grid to the output grid:',
+                lambda: 'The following images shows an example of a mapping from an input grid to the output grid:',
                 lambda: ('list', self.send_pairs()),
                 lambda: f'''Please examine the images and explain in detail what transformations or patterns you observe between the input and output grids.
 
@@ -45,11 +46,15 @@ Notes:
 Available function that you can use:
 {self.send_tools_docs()}
 
+
 Notes:
 - Your function should accept each grid as a Python list of lists. Each element of the list represents one color as an integer from 0 to 9.
 - The color mappings are: black: 0, blue: 1, red: 2, green: 3, yellow: 4, grey: 5, magenta: 6, orange: 7, teal: 8, brown: 9.
 - Remember that the inputs and outputs are row-major encoded.
-- Put your solve function with the provided signature in a code block. I will run your code and let you know the results.'''
+- Put your solve function with the provided signature in a code block. I will run your code and let you know the results.
+- Do not use any other function other than those specified above. Do not implement those functions, with empty bodies for example:
+They are available in the executation context.
+'''
             ],
             do_work=self.extract_and_run_mapping_code,
             next_state=lambda response: 'success' if self.is_last_run_success() else 'mapping_code_failed'
@@ -78,7 +83,9 @@ Notes:
         self.num_failed += 1
 
     def extract_and_run_mapping_code(self, response):
-        tools_codes = '\n'.join(v['code'] for v in self.tools.values())
+        # tools_codes = '\n'.join(v['code'] for v in self.tools.values())
+        tools_codes = Path('tools_extracted_mini.py').read_text()
+        
         response = f'```\n{tools_codes}\n```\n\n' + response
         results = extract_and_run_mapping_code(response, self.task_id, self.dataset)
         self.run_results.append(results)
@@ -134,14 +141,47 @@ Notes:
         # return
             
         # FIXME: pass log_dir to statemachine __init__ functions and create a new log file in it
-        log_dir = Path('logs-etc') / 'toolwriter' / datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = log_dir / '1.md'
-        log_dir.mkdir(parents=True, exist_ok=True)
-        llm_tool_writer_ = LLMToolWriter(log_file=log_file)
-        self.tools = llm_tool_writer_(self.hypothesis)
+        # log_dir = Path('logs-etc') / 'toolwriter' / datetime.now().strftime('%Y%m%d-%H%M%S')
+        # log_file = log_dir / '1.md'
+        # log_dir.mkdir(parents=True, exist_ok=True)
+        # # llm_tool_writer_ = LLMToolWriter(log_file=log_file)
+        # self.tools = llm_tool_writer_(self.hypothesis)
 
+       
     def send_tools_docs(self):
-        results = ''
-        for func_name, v in self.tools.items():
-            results += f'- {v["signature"]}\n'
-        return results
+        return '''Grid = list[list[int]]
+Object = list[tuple[tuple[int,int], int]]
+
+def direct_neighbors(loc: tuple[int,int]) -> list[tuple[int,int]]:
+""" directly adjacent indices (including invalid (negative) indiced) """
+
+def diagonal_neighbors(loc: tuple[int,int]) -> list[tuple[int,int]]:
+""" diagonally adjacent indices (including invalid (negative) indiced) """
+
+def neighbors(loc: tuple[int,int]) -> list[tuple[int,int]]:
+""" adjacent indices (including invalid (negative) indiced) """
+
+def most_color(element: Object|Grid) -> int:
+""" most common color """
+
+def as_indices(grid: Grid) -> list[tuple[int,int]]:
+""" indices of all grid cells """
+
+def get_grid_objects(grid: Grid, univalued: bool, diagonal: bool, without_bg: bool) -> list[Object]:
+""" Extract connected objects from a grid.
+
+Args:
+    grid (List[List[int]]): A 2D grid represented as a list of lists of integers.
+    univalued (bool): If True, only consider connected cells with the same value as part of an object.
+                        If False, any non-background value is included in the object.
+    diagonal (bool): If True, include diagonal neighbors when determining connectivity.
+                        If False, only consider orthogonal neighbors (up, down, left, right).
+    without_bg (bool): If True, ignore the background value, when finding objects.
+
+Returns:
+    List[Object]: A list of objects, where each object is a list of tuples like ((row index, column index), value).
+"""
+
+def has_hole(obj: Object) -> bool:
+""" checks if there is a hole in an object """
+'''
