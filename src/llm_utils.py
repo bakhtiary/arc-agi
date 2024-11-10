@@ -10,6 +10,7 @@ import warnings
 from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from log_utils import add_string_to_log, message_to_md
 
+
 def extract_code(assistant_reply):
     code_blocks = re.findall(r'```(?:python)?\n(.*?)```', assistant_reply, re.DOTALL)
     if code_blocks:

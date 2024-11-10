@@ -7,8 +7,8 @@ from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from image_utils import base64_to_pil_image
 from llm_utils import LLMInterface
 
-# check_point = '/kaggle/input/qwen2-vl/transformers/qwen2-vl-7b-instruct/1/'
-check_point = 'Qwen/Qwen2-VL-7B-Instruct'
+check_point = '/kaggle/input/qwen2-vl/transformers/qwen2-vl-7b-instruct/1/'
+# check_point = 'Qwen/Qwen2-VL-7B-Instruct'
 model = Qwen2VLForConditionalGeneration.from_pretrained(check_point, torch_dtype=torch.bfloat16, device_map="auto")
 processor = AutoProcessor.from_pretrained(check_point)
 
