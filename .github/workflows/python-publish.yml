@@ -33,6 +33,7 @@ jobs:
         KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
       run: |
         pip install kaggle
+        # kaggle datasets create  --keep-tabular -p src 
         kaggle datasets version  --keep-tabular -p src -m ${{ github.sha }}
 
 

@@ -6,7 +6,8 @@ import warnings
 
 from dataset import LocalDataset
 from llm_tool_writer_utils import extract_func_name_from_signature
-from llm_utils import HistoryManager, LLMInterface, LiteLLMInterface, chat_with_llm
+from llm_utils import HistoryManager, LLMInterface, chat_with_llm
+from litellm_interface import LiteLLMInterface
 from simple_state_machine_distinct_pairs_with_tools import SimpleStateMachineDistinctPairswithTools
 from state_machine_solver import StateMachineSolver
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")

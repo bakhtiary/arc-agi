@@ -1,6 +1,7 @@
 {
   "title": "arc-agi-solver-package",
-  "id": "amirishere/arc-agi-solver-package",
+  "xid": "amirishere/arc-agi-solver-package",
+  "id": "raspberrycup/firearchers-submission-package",
   "licenses": [
     {
       "name": "CC0-1.0"

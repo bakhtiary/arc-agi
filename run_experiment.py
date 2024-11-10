@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 import warnings
 
-from llm_utils import LiteLLMInterface
+from litellm_interface import LiteLLMInterface
 warnings.filterwarnings('ignore', category=UserWarning, module='pydantic.main')
 from dotenv import load_dotenv
 load_dotenv('.secrets')

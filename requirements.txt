@@ -1,10 +1,15 @@
 matplotlib
 numpy
-openai
+# openai
 litellm
-tenacity
-pytest
+# tenacity
+# pytest
 flask
 markdown
-pygments
+# pygments
 python-dotenv
+pydantic
+pillow
+torch
+transformers
+accelerate
