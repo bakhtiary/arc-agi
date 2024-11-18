@@ -1,0 +1,3 @@
+Same as important-run-logs/20241107-184445
+
+uses SimpleStateMachineDistinctPairswithTools, tools, gpt-4o for hypothesis generation (multi-modal), and o1 for code 
