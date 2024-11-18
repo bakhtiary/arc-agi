@@ -62,22 +62,59 @@ def draw_single_axis(ax: matplotlib.axes.Axes, grid, draw_edges=True, draw_spine
     # else:
     #     draw_single_axis_pcolormesh(ax, grid, draw_edges, draw_spine_border)
 
+def integerize_labels(ticks: list[float], labels: list[str]) -> list[str]:
+    return ticks, labels
+    new_ticks, new_labels = [], []
+    for tick, label in zip(ticks, labels):
+        if tick == int(tick):
+            new_ticks.append(tick)
+            new_labels.append(str(int(tick)))
+        else:
+            new_ticks.append(tick)
+            new_labels.append('')
+    return new_ticks, new_labels
+
+
 def draw_single_axis_pcolormesh(ax: matplotlib.axes.Axes, grid, draw_edges=True, draw_spine_border=False):
     if draw_edges:
         linewidth = 10 - ((max(len(grid), len(grid[0]))-1)//10)*4
     else:
         linewidth = 0
     ax.pcolormesh(grid, cmap=arc_cmap, vmin=0, vmax=10, edgecolors='white', linewidth=linewidth)
-    ax.invert_yaxis()
-    ax.set_aspect('equal', adjustable='box')
     
+    # Note: In pcolormesh function, "the column index corresponds to the x-coordinate,
+    # and the row index corresponds to y". https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.pcolormesh.html
+    # Therefore, grid is indexed as grid[y][x]. That is, "The grid orientation follows the standard matrix
+    # convention: An array C with shape (nrows, ncolumns) is plotted with the column number as X and
+    # the row number as Y." This is in line with arc, with the only difference that, in ARC, officially,
+    # grids are depicted with inverted y, that is from top to bottom, for example,
+    # the grid [[7, 0, 7], [7, 0, 7], [7, 7, 0]] (task 007bbfb7) is depicted as
+    #   7 0 7
+    #   7 0 7
+    #   7 7 0
+    # (see https://arcprize.org/play?task=007bbfb7)
+    # However, we don't depict it inverted so that LLM understand it more easily, sp. in the code it generates.
+    # Therefore, we depict the same from bottom to top as:
+    #   7 7 0
+    #   7 0 7
+    #   7 0 7
+    #ax.invert_yaxis() # --> no need
+    
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_xlim(0,len(grid[0]))
     if not draw_spine_border:
         ax.set_xticks([])
         ax.set_yticks([])
         for spine in ax.spines.values():
             spine.set_visible(False)
     else:
-        yticks = ax.get_yticks()
-        yticklabels = ax.get_yticklabels()
-        ax.set_yticks(yticks, reversed(yticklabels))
+        # print(integerize_labels(ax.get_xticks(), ax.get_xticklabels()))
+        #ax.set_xticks(*integerize_labels(ax.get_xticks(), ax.get_xticklabels()))
+        xticks = range(0,len(grid[0]),max(1, len(grid[0])//6))
+        ax.set_xticks(xticks, map(str, xticks))
+        # reverse needed for official depiction (see above)
+        #ax.set_yticks(*integerize_labels(ax.get_yticks(), ax.get_yticklabels()))
+        yticks = range(0,len(grid),max(1, len(grid)//6))
+        ax.set_yticks(yticks, map(str, yticks))
+
   

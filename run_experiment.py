@@ -7,14 +7,15 @@
 from datetime import datetime
 from pathlib import Path
 import warnings
-
-from litellm_interface import LiteLLMInterface
 warnings.filterwarnings('ignore', category=UserWarning, module='pydantic.main')
-from dotenv import load_dotenv
-load_dotenv('.secrets')
 
 import litellm
 litellm.drop_params=True
+
+from dotenv import load_dotenv
+load_dotenv('.secrets')
+
+from litellm_interface import LiteLLMInterface
 
 from dataset import LocalDataset, KaggleDataset
 from experimenter import experiment
@@ -23,7 +24,7 @@ from state_machine_solver import StateMachineSolver
 from state_machine_multi_solver import StateMachineMultiSolver, StateMachineSolverWithRestart
 
 from simple_state_machine_distinct_pairs import SimpleStateMachineDistinctPairs
-from simple_state_machine_distinct_pairs_with_tools import SimpleStateMachineDistinctPairswithTools
+from simple_state_machine_distinct_pairs_with_tools import SimpleStateMachineDistinctPairsWithTools
 
 from simple_lens_state_machine import SimpleLensStateMachine
 from simple_state_machine_all_in_one import SimpleStateMachineAllInOne
@@ -42,8 +43,8 @@ def crappy_solve(task_id, dataset, log_dir):
 # No lambda because --> Can't pickle <function <lambda> at ...
 # Not local to local_main because --> Can't pickle local object 'local_main.<locals>.factory'
 def SimpleStateMachineDistinctPairswithTools_factory(task_id, dataset):
-    result = SimpleStateMachineDistinctPairswithTools(task_id, dataset, which_pairs='all')
-    result.max_num_failed = 1
+    result = SimpleStateMachineDistinctPairsWithTools(task_id, dataset, which_pairs='all')
+    result.max_num_failed = 10
     return result
 
 def kaggle_main():
@@ -85,10 +86,13 @@ def local_main():
     
     for_dsl = ['beb8660c', '85c4e7cd', 'a2fd1cf0']
 
-    task_ids = t1_easy
+    # task_ids = t1_easy
     # task_ids = pre_dealine_mix
     # task_ids = t_order_bars_by_color
-    # task_ids = pre_dealine_mix
+    task_ids = pre_dealine_mix
+    
+    # paper_submission_ids = ['9def23fe', '6f473927', '00dbd492', '33b52de3', '12eac192', '351d6448', 'e6de6e8f', 'e760a62e', '62ab2642', 'c8b7cc0f', '48131b3c', '4364c1c4', '25094a63', '55783887', '8fbca751', '3490cc26', 'e7a25a18', '90347967', '93c31fbe', '456873bc']
+    # task_ids = paper_submission_ids
 
     # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
@@ -128,10 +132,11 @@ def local_main():
     # state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools)
     
     dataset = LocalDataset('training')
+    # dataset = LocalDataset('evaluation')
     
     experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=6)
 
 
 if __name__ == '__main__':
-    kaggle_main()
-    # local_main()
+    # kaggle_main()
+    local_main()

@@ -1,7 +1,6 @@
 import json
 import os
 from pathlib import Path
-import signal
 import time
 from multiprocessing import Pool
 import traceback
@@ -80,9 +79,9 @@ def create_and_save_submission_file(dataset_: Dataset, list_of_results):
 class TimeoutException(Exception):
     pass
 
-def handler(signum, frame):
-    os.kill(os.getpid(), signal.SIGINT)
-    raise TimeoutException("The model.generate() call timed out.")
+# def handler(signum, frame):
+#     os.kill(os.getpid(), signal.SIGINT)
+#     raise TimeoutException("The model.generate() call timed out.")
 
 def experiment(solver, task_ids, dataset, log_dir: Path, pool_size=5, timeout_seconds=None):
     """
@@ -93,10 +92,6 @@ def experiment(solver, task_ids, dataset, log_dir: Path, pool_size=5, timeout_se
     print(f'{pool_size=}')
     print(f'Live view: http://127.0.0.1:5000/experiment_summary#{log_dir.parent.name}-{log_dir.name}')
     print('=======' * 11 + '==\n')
-
-    if timeout_seconds is not None:
-        signal.signal(signal.SIGALRM, handler)
-        signal.alarm(timeout_seconds)
 
     # create an empty submission file, just in case!
     create_and_save_submission_file(dataset, [])

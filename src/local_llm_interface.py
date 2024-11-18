@@ -24,6 +24,8 @@ class QwenLocalLLMInterface(LLMInterface):
         super().__init__()
         self.timeout_seconds = timeout_seconds
 
+    def llm_name_translate(self, generic_name):
+        return 'qwen'
 
     def messages_to_local_llm_format(self, messages):
         results = []

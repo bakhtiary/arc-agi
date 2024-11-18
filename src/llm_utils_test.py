@@ -23,6 +23,7 @@ class TestHistoryManager(TestCase):
                 history_manager.add_image([[1]])
                 history_manager.add_text('hi2')
             self.assertIn('how are ya?', log_file.read_text())
+            log_file.unlink()
 
     def test_ttl_works(self):
         history_manager = HistoryManager()

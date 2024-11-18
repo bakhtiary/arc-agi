@@ -7,7 +7,7 @@ import re
 import threading
 import warnings
 
-from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
+from image_utils import single_grid_to_base64
 from log_utils import add_string_to_log, message_to_md
 
 
@@ -28,8 +28,19 @@ class LLMInterface:
     text_model_name: str
 
     @abstractmethod
-    def chat_with_llm(messages, llm: str, resp_format=None):
+    def chat_with_llm(self, messages, llm: str, resp_format=None):
         return
+    
+    @abstractmethod
+    def llm_name_translate(self, generic_name):
+        return
+    
+    def get_llms_mapping(self):
+        result = {}
+        generic_names = [LLMInterface.TEXT_ADVANCED, LLMInterface.TEXT, LLMInterface.VISION]
+        for generic_name in generic_names:
+            result[generic_name] = self.llm_name_translate(generic_name)
+        return result
 
         
 class HistoryManager:

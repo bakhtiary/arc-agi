@@ -1,3 +1,4 @@
+from dataset import Dataset
 from llm_utils import HistoryManager, LLMInterface, chat_with_llm
 from log_utils import create_empty_log, add_string_to_log
 
@@ -16,11 +17,15 @@ class StateMachineSolver:
         self.state_machine_class = state_machine_class
         self.llm_interface = llm_interface
 
-    def __call__(self, task_id, dataset, log_dir, log_file=None): # --> task_id, dataset, log_file, solutions
+    def __call__(self, task_id, dataset: Dataset, log_dir, log_file=None): # --> task_id, dataset, log_file, solutions
         # task = dataset.read_task(task_id)
         if log_file is None:
             log_file = log_dir / task_id / f'{1}.full.md'
         create_empty_log(log_file)
+        add_string_to_log(f'''# Task summary
+Task id: {task_id}
+Dataset: {dataset.string_encode()}
+LLMInterface: {self.llm_interface.get_llms_mapping()}\n\n''', log_file)
         print(f'Solving {task_id}: http://127.0.0.1:5000/#{log_dir.parent.name}/{log_dir.name}/{task_id}/{log_file.name}')
         
         cur_state_machine = self.state_machine_class(task_id, dataset)

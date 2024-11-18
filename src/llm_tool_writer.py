@@ -9,7 +9,7 @@ class FuncsListResponse(BaseModel):
     func_list: list[str]
 
 
-from llm_tool_writer_utils import extract_and_run_tool_code, extract_func_code_from_full_src, extract_func_name_from_signature, is_tool_writer_run_success
+from llm_tool_writer_utils import extract_and_run_tool_code, extract_func_code_from_full_src, extract_func_name_from_signature
 from llm_utils import HistoryManager, LLMInterface, chat_with_llm
 
 DEFAULT_LLM = 'gpt-4o'
@@ -217,7 +217,10 @@ Note:
                 for obj in run_results:
                     history_manager.add_text(obj['text'])
 
-            if is_tool_writer_run_success(run_results):
+            if (len(run_results) >= 1 and
+                'text' in run_results[-1] and
+                run_results[-1]['text'] == '|successful run|'
+            ):
                 return extract_func_code_from_full_src(func_name, assistant_reply)
             else:
                 num_failed += 1

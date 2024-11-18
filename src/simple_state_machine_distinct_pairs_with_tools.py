@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+from code_utils import generate_tools_docs_by_ast
 from grid_utils import get_grid_sizes, AKGrid
 from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from llm_tool_writer import LLMToolWriter
@@ -9,7 +10,7 @@ from tools_example import tools_example
 
 current_file_dir = Path(__file__).parent
 
-class SimpleStateMachineDistinctPairswithTools:
+class SimpleStateMachineDistinctPairsWithTools:
     def __init__(self, task_id, dataset, which_pairs: str|list[int]='all'):
         self.start_state = 'entry_point'
         self.phase = 'all_in_one'
@@ -28,12 +29,12 @@ class SimpleStateMachineDistinctPairswithTools:
         # starting with all-images (no bordrer), looking to features, ...
         self.states['entry_point'] = dict(
             message_to_send=[
-                lambda: 'The following images shows an example of a mapping from an input grid to the output grid:',
+                lambda: 'The following images shows examples of a mapping from an input grid to the output grid:',
                 lambda: ('list', self.send_pairs()),
                 lambda: f'''Please examine the images and explain in detail what transformations or patterns you observe between the input and output grids.
 
 Notes:
-- Notice objects such as points, lines, squares, zones, patches, etc., and their properties (position, color, thickness, etc.).
+- Notice objects such as points, lines, squares, zones, sections, patches, etc., and their properties (position, color, thickness, etc.).
 - Keep in mind that the attached images do not display their actual resolutions. For instance, what appears to be a 2x2 grid in an image might actually be a 6x6 grid, with each cell of the 2x2 grid comprising multiple smaller cells.
 - The maximum grid size is 30x30. {get_grid_sizes(self.task, which='all')}
 - After providing your explanation, I will ask you to write code to implement the mapping.'''
@@ -44,7 +45,7 @@ Notes:
 
         self.states['ask_for_code'] = dict(
             message_to_send=[
-                lambda: f'''Based on your explanation, please write a Python function with the signature `solve(grid: list[list[int]]) -> list[list[int]]` that implements your proposed mapping.
+                lambda: f'''Based on this explanation of the task, please write a Python function with the signature `solve(grid: list[list[int]]) -> list[list[int]]` that implements your proposed mapping.
 
 Available function that you can use:
 {self.send_tools_docs()}
@@ -52,11 +53,14 @@ Available function that you can use:
 
 Notes:
 - Your function should accept each grid as a Python list of lists. Each element of the list represents one color as an integer from 0 to 9.
-- The color mappings are: black: 0, blue: 1, red: 2, green: 3, yellow: 4, grey: 5, magenta: 6, orange: 7, teal: 8, brown: 9.
+- The color mappings are: black: 0, blue: 1, red: 2, green: 3, yellow: 4, grey: 5, magenta: 6, orange: 7, light blue: 8, brown: 9.
 - Remember that the inputs and outputs are row-major encoded.
 - Put your solve function with the provided signature in a code block. I will run your code and let you know the results.
 - Do not use any other function other than those specified above. Do not implement those functions, with empty bodies for example:
 They are available in the executation context.
+- Your tool box is versatile and extensive. DON'T FEEL THE URGE TO USE THEM ALL. JUST USE THE ONES THAT YOU REALLY NEED.
+For example, use `has_hole` only if you really need to check has a hole, for instance, because, only the objects with holes
+are selected for the output grid.
 '''
             ],
             do_work=self.extract_and_run_mapping_code,
@@ -139,7 +143,7 @@ They are available in the executation context.
         return results
     
     
-    def set_hypothesis_and_get_tools(self, response):
+    def set_hypothesis_and_get_tools(self, response):        
         self.hypothesis = response
 
         # self.tools = tools_example
@@ -151,42 +155,6 @@ They are available in the executation context.
         # log_dir.mkdir(parents=True, exist_ok=True)
         # # llm_tool_writer_ = LLMToolWriter(log_file=log_file)
         # self.tools = llm_tool_writer_(self.hypothesis)
-
        
     def send_tools_docs(self):
-        return '''Grid = list[list[int]]
-Object = list[tuple[tuple[int,int], int]]
-
-def direct_neighbors(loc: tuple[int,int]) -> list[tuple[int,int]]:
-""" directly adjacent indices (including invalid (negative) indiced) """
-
-def diagonal_neighbors(loc: tuple[int,int]) -> list[tuple[int,int]]:
-""" diagonally adjacent indices (including invalid (negative) indiced) """
-
-def neighbors(loc: tuple[int,int]) -> list[tuple[int,int]]:
-""" adjacent indices (including invalid (negative) indiced) """
-
-def most_color(element: Object|Grid) -> int:
-""" most common color """
-
-def as_indices(grid: Grid) -> list[tuple[int,int]]:
-""" indices of all grid cells """
-
-def get_grid_objects(grid: Grid, univalued: bool, diagonal: bool, without_bg: bool) -> list[Object]:
-""" Extract connected objects from a grid.
-
-Args:
-    grid (List[List[int]]): A 2D grid represented as a list of lists of integers.
-    univalued (bool): If True, only consider connected cells with the same value as part of an object.
-                        If False, any non-background value is included in the object.
-    diagonal (bool): If True, include diagonal neighbors when determining connectivity.
-                        If False, only consider orthogonal neighbors (up, down, left, right).
-    without_bg (bool): If True, ignore the background value, when finding objects.
-
-Returns:
-    List[Object]: A list of objects, where each object is a list of tuples like ((row index, column index), value).
-"""
-
-def has_hole(obj: Object) -> bool:
-""" checks if there is a hole in an object """
-'''
+        return generate_tools_docs_by_ast(Path(current_file_dir / 'tools_src_mini.py'))

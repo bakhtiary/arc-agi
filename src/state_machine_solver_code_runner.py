@@ -20,7 +20,16 @@ class CodeRunner:
         try:
             local_namespace = {}
             # exec(code, {}, local_namespace)
-            exec(code, local_namespace)
+            code_lines = code.splitlines()
+            code_lines2 = []
+            for line in code_lines:
+                line = line.removesuffix('\n')
+                if line.startswith('assert'):
+                    code_lines2.append('#' + line)
+                else:
+                    code_lines2.append(line)
+            # exec(code, local_namespace)
+            exec('\n'.join(code_lines2), local_namespace)
         except Exception:
             error_msg = traceback.format_exc()
             self.emit_text (f'''The following error happened when evaluating your function `solve`:

@@ -8,7 +8,7 @@ from dataset import LocalDataset
 from llm_tool_writer_utils import extract_func_name_from_signature
 from llm_utils import HistoryManager, LLMInterface, chat_with_llm
 from litellm_interface import LiteLLMInterface
-from simple_state_machine_distinct_pairs_with_tools import SimpleStateMachineDistinctPairswithTools
+from simple_state_machine_distinct_pairs_with_tools import SimpleStateMachineDistinctPairsWithTools
 from state_machine_solver import StateMachineSolver
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.main")
 
@@ -38,10 +38,10 @@ if __name__ == "__main__":
     dataset = LocalDataset('training')
     
     history_manager = HistoryManager(log_file)
-    state_machine = SimpleStateMachineDistinctPairswithTools(task_id, dataset)
+    state_machine = SimpleStateMachineDistinctPairsWithTools(task_id, dataset)
     cur_state = state_machine.states['entry_point']
     llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='gpt-4o')
-    state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools, llm_interface)
+    state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairsWithTools, llm_interface)
     state_machine_solver.add_state_machine_messages(cur_state['message_to_send'],
         DEFAULT_LLM, history_manager)
     

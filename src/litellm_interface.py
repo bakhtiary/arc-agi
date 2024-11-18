@@ -13,7 +13,7 @@ class LiteLLMInterface(LLMInterface):
             return self.text_model
         else:
             return self.vision_model
-
+        
     def chat_with_llm(self, messages, llm: str, resp_format=None):
         llm = self.llm_name_translate(llm)
         if resp_format is None:

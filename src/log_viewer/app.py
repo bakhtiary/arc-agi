@@ -1,19 +1,26 @@
+import os
 from collections import defaultdict
 import itertools
 from pathlib import Path
+
+
 from flask import Flask, render_template, jsonify, request
-import os
+from werkzeug.middleware.profiler import ProfilerMiddleware
 import markdown
+
 from calc_logs_statistics import get_log_summary_by_experiments, get_log_summary_by_tasks, task_summary_to_ladder
 from dataset import LocalDataset
-from image_utils import single_grid_to_base64
+from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from state_machine_solver_utils import run_task_code_read_outputs_with_timeout
+from tools_src_mini import get_grid_objects_as_flat_list, get_grid_objects_hierarchy
+from lens_orthogonal import describe_objects_orthogonal_flat, describe_objects_orthogonal_hierarchy
 
-app = Flask(__name__)
-
-current_file_directory = Path(__file__).parent
+current_file_dir = Path(__file__).parent
 log_root_dirs = [Path('important-run-logs'), Path('logs')]
 
+app = Flask(__name__)
+# Uncomment for profiling
+app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=(str(current_file_dir.parent),))
 
 def get_task_level(dataset, task_id):
     log_summary_task = get_log_summary_by_tasks(log_root_dirs)
@@ -268,13 +275,15 @@ def solve_fn():
     html_content = ''
     if request.method == 'POST':
         code_ = request.form.get('code', '')
+        tools_codes = Path(current_file_dir.parent / 'tools_src_mini.py').read_text()
+        code2_ = tools_codes + '\n\n' + code_
         outputs = run_task_code_read_outputs_with_timeout(task_id_, LocalDataset(dataset_),
-                code_.encode(), 10, current_file_directory.parent/'state_machine_solver_code_runner.py')
+                code2_.encode(), 10, current_file_dir.parent / 'state_machine_solver_code_runner.py')
         for obj in outputs:
             if 'text' in obj:
                 html_content += f'<div>{obj["text"]}</div>'
             elif 'grid' in obj:
-                html_content += f'<div><img src="data:image/jpeg;base64,{single_grid_to_base64(obj["grid"], draw_edges=False)}"></div>'
+                html_content += f'<div><img src="data:image/jpeg;base64,{single_grid_to_base64(obj["grid"], draw_edges=False, draw_spine_border=True)}"></div>'
         
         html_content += '<pre>'
         for obj in outputs:
@@ -283,6 +292,83 @@ def solve_fn():
 
     return render_template('solve_fn_index.html', dataset=dataset_, task_id=task_id_,
         code=code_, html_content=html_content)
+
+def dict_to_str(d: dict) -> str:
+    return f'({", ".join(f"{key}={value}" for key, value in d.items())})'
+
+def dicts_to_str(ds: list[dict]) -> str:
+    return '{' + ', '.join(dict_to_str(d) for d in ds) + '}'
+
+def grid_to_lens_html(grid):
+    result = f'<div><img src="data:image/jpeg;base64,{single_grid_to_base64(grid, draw_edges=False, draw_spine_border=True)}"></div>'
+    objs1 = get_grid_objects_as_flat_list(grid, univalued=True, diagonal=True, with_bg=False, bg_color=0)
+    objs2 = get_grid_objects_as_flat_list(grid, univalued=True, diagonal=False, with_bg=False, bg_color=0)
+    objs3 = get_grid_objects_as_flat_list(grid, univalued=False, diagonal=True, with_bg=False, bg_color=0)
+    objs4 = get_grid_objects_as_flat_list(grid, univalued=False, diagonal=False, with_bg=False, bg_color=0)
+
+    desc1 = describe_objects_orthogonal_flat(objs1, univalued=True)
+    desc2 = describe_objects_orthogonal_flat(objs2, univalued=True)
+    desc3 = describe_objects_orthogonal_flat(objs3, univalued=False)
+    desc4 = describe_objects_orthogonal_flat(objs4, univalued=False)
+
+    desc1 = dicts_to_str(desc1)
+    desc2 = dicts_to_str(desc2)
+    desc3 = dicts_to_str(desc3)
+    desc4 = dicts_to_str(desc4)
+
+    objs5 = get_grid_objects_hierarchy(grid)
+    desc5 = describe_objects_orthogonal_hierarchy(objs5, univalued=True)
+    # def _remove_pos(an_obj):
+    #     # an_obj['size'] = len(an_obj['positions'])
+    #     # del an_obj['positions']
+    #     an_obj['positions'] = len(an_obj['positions'])
+    #     for ch_obj in an_obj['children']:
+    #         _remove_pos(ch_obj)
+
+    # for obj in objs5:
+    #     _remove_pos(obj)
+
+    return f'{result}<br>{desc5}'
+
+    result += f'''<pre>## Automatic grid description
+### Objects in the grid get_grid_objects(grid, univalued=True, diagonal=True, with_bg=False, bg_color=0)
+{desc1}
+
+### Objects in the get_grid_objects(grid, univalued=True, diagonal=False, with_bg=False, bg_color=0)
+{desc2}
+
+### Objects in the get_grid_objects(grid, univalued=False, diagonal=True, with_bg=False, bg_color=0)
+{desc3}
+
+### Objects in the get_grid_objects(grid, univalued=False, diagonal=False, with_bg=False, bg_color=0)
+{desc4}'''
+    
+    return result
+
+
+@app.route('/lens_viewer')
+def lens_viewer():
+    dataset_ = request.args.get('dataset', 'training')
+    task_id_ = request.args.get('task_id', '')
+    html_content = ''
+
+    if task_id_ != '':
+        task = LocalDataset(dataset_).read_task(task_id_)
+            
+        for i,sample in enumerate(task["train"], 1):
+            html_content += f'<h3>Train pair {i}</h3>'
+            html_content += grid_to_lens_html(sample['input'])
+            html_content += grid_to_lens_html(sample['output'])
+            html_content += '<hr>'
+                
+
+        for i,sample in enumerate(task["test"], 1):
+            html_content += f'<h3>Test pair {i}</h3>'
+            html_content += grid_to_lens_html(sample['input'])
+        
+    return render_template('lens_index.html', dataset=dataset_, task_id=task_id_,
+        html_content=html_content)
+
 
 @app.route('/any_md')
 def any_md():
@@ -299,3 +385,4 @@ def any_md():
         html_content = 'File not found.'
 
     return html_content
+
