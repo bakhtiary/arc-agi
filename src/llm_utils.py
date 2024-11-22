@@ -28,19 +28,30 @@ class LLMInterface:
     text_model_name: str
 
     @abstractmethod
-    def chat_with_llm(self, messages, llm: str, resp_format=None):
+    def chat_with_llm(self, messages, llm_tag: str, resp_format=None):
         return
     
     @abstractmethod
-    def llm_name_translate(self, generic_name):
+    def llm_name_translate(self, llm_tag):
         return
     
     def get_llms_mapping(self):
         result = {}
-        generic_names = [LLMInterface.TEXT_ADVANCED, LLMInterface.TEXT, LLMInterface.VISION]
-        for generic_name in generic_names:
-            result[generic_name] = self.llm_name_translate(generic_name)
+        llm_tags = [LLMInterface.TEXT_ADVANCED, LLMInterface.TEXT, LLMInterface.VISION]
+        for llm_tag in llm_tags:
+            result[llm_tag] = self.llm_name_translate(llm_tag)
         return result
+    
+    def prune_images(self, messages):
+        result = []
+        for message in messages:
+            assert isinstance(message['content'], list)
+            result.append({
+                'role': message['role'],
+                'content': [cont for cont in message['content'] if cont['type'] == 'text']
+            })
+        return result
+
 
         
 class HistoryManager:
@@ -119,6 +130,6 @@ class HistoryManager:
         self.ttls[-1] = last_ttl
 
 def chat_with_llm(llm_intreface: LLMInterface, histoy_manager: HistoryManager,
-    llm: str, resp_format=None, cur_tst=None):
+    llm_tag: str, resp_format=None, cur_tst=None):
         return llm_intreface.chat_with_llm(
-            histoy_manager.get_messages(cur_tst=cur_tst), llm, resp_format)
+            histoy_manager.get_messages(cur_tst=cur_tst), llm_tag, resp_format)

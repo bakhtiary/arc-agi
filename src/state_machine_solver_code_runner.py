@@ -16,7 +16,7 @@ class CodeRunner:
     def emit_grid(self, grid):
         print(json.dumps({'grid': grid}))
 
-    def do_run_code(self, code: str, task: dict):  # TODO run task in another thread or process for a limited amount of time
+    def do_run_code(self, code: str, task: dict):
         try:
             local_namespace = {}
             # exec(code, {}, local_namespace)
@@ -95,6 +95,33 @@ Please write a corrected code enclosed in triple backticks.''')
             self.emit_text('|successful run|')
             self.emit_text(f"{pred_grid_for_tests}")
 
+# def main():
+#     import argparse
+
+#     parser = argparse.ArgumentParser(prog='python -m ast')
+#     parser.add_argument('infile', type=argparse.FileType(mode='rb'), nargs='?',
+#                         default='-',
+#                         help='the file to parse; defaults to stdin')
+#     parser.add_argument('-m', '--mode', default='exec',
+#                         choices=('exec', 'single', 'eval', 'func_type'),
+#                         help='specify what kind of code must be parsed')
+#     parser.add_argument('--no-type-comments', default=True, action='store_false',
+#                         help="don't add information about type comments")
+#     parser.add_argument('-a', '--include-attributes', action='store_true',
+#                         help='include attributes such as line numbers and '
+#                              'column offsets')
+#     parser.add_argument('-i', '--indent', type=int, default=3,
+#                         help='indentation of nodes (number of spaces)')
+#     args = parser.parse_args()
+
+#     with args.infile as infile:
+#         source = infile.read()
+#     tree = parse(source, args.infile.name, args.mode, type_comments=args.no_type_comments)
+#     print(dump(tree, include_attributes=args.include_attributes, indent=args.indent))
+
+# if __name__ == '__main__':
+#     main()
+
 if __name__ == "__main__":
     task_id_ = str(sys.argv[1])
     dataset_ = load_dataset(str(sys.argv[2]))
@@ -109,3 +136,5 @@ if __name__ == "__main__":
 
     code_runner = CodeRunner()
     code_runner.start_running(task_id_, dataset_, code_)
+
+

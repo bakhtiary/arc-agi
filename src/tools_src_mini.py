@@ -152,20 +152,20 @@ def get_subobject(obj: Object, positions: dict):
     return [(x,c) for x,c in obj if x in positions]
 
 get_rectangle_positions_cache_ = dict()
-def get_rectangle_positions_(bl_y, bl_x, w, h, t):
+def get_rectangle_positions_(tl_y, tl_x, w, h, t):
     if (w,h,t) not in get_rectangle_positions_cache_:
         get_rectangle_positions_cache_[(w,h,t)] = get_rectangle_positions_do_(0, 0, w, h, t)
     
     rect_0_0 = get_rectangle_positions_cache_[(w,h,t)]
     # rect_0_0_np = np.array(rect_0_0)
-    # offsets = np.array([bl_y, bl_x])
+    # offsets = np.array([tl_y, tl_x])
     # result = rect_0_0_np + offsets
     # return result
 
-    return [(y+bl_y, x+bl_x) for y,x in rect_0_0]
+    return [(y+tl_y, x+tl_x) for y,x in rect_0_0]
     
 @ignore_for_llm_tools_docs
-def get_rectangle_positions_do_(bl_y, bl_x, w, h, t):
+def get_rectangle_positions_do_(tl_y, tl_x, w, h, t):
     """ t is thickness, t=0 gives a solid (filled) rectangle. """
     max_border_thickness = max(1, min(h, w) // 2)
     if t < 0 or t > max_border_thickness:
@@ -176,21 +176,21 @@ def get_rectangle_positions_do_(bl_y, bl_x, w, h, t):
     positions = []
     if t == 0:
         # Fill the rectangle completely
-        for y in range(bl_y, bl_y + h):
-            for x in range(bl_x, bl_x + w):
+        for y in range(tl_y, tl_y + h):
+            for x in range(tl_x, tl_x + w):
                 positions.append((y, x))
     elif t == 1:
         # Include only the perimeter (outline) of the rectangle
-        for y in range(bl_y, bl_y + h):
-            for x in range(bl_x, bl_x + w):
-                if y == bl_y or y == bl_y + h - 1 or x == bl_x or x == bl_x + w - 1:
+        for y in range(tl_y, tl_y + h):
+            for x in range(tl_x, tl_x + w):
+                if y == tl_y or y == tl_y + h - 1 or x == tl_x or x == tl_x + w - 1:
                     positions.append((y, x))
     else:
         # Include the border of thickness t
-        for y in range(bl_y, bl_y + h):
-            for x in range(bl_x, bl_x + w):
-                if (y - bl_y < t or (bl_y + h - 1 - y) < t or
-                    x - bl_x < t or (bl_x + w - 1 - x) < t):
+        for y in range(tl_y, tl_y + h):
+            for x in range(tl_x, tl_x + w):
+                if (y - tl_y < t or (tl_y + h - 1 - y) < t or
+                    x - tl_x < t or (tl_x + w - 1 - x) < t):
                     positions.append((y, x))
     return positions
 
@@ -252,7 +252,6 @@ def get_grid_objects_as_flat_list(grid: Grid, univalued: bool, diagonal: bool, w
     return objs
 
 
-
 def describe_rectangle_or_line_or_point_univalued(rectangle: dict) -> dict:
     rectangle_positions = rectangle['positions']
     if not rectangle_positions:
@@ -262,11 +261,11 @@ def describe_rectangle_or_line_or_point_univalued(rectangle: dict) -> dict:
     if (w,h) == (1,1):            
         return dict(shape='point', position=first_pos)
     elif w == 1:
-        return dict(shape='line', direction='vertical', x=first_pos[0], length=len(rectangle_positions))
+        return dict(shape='line', direction='vertical', x=first_pos[1], start_y=rectangle['tl_y'], length=len(rectangle_positions))
     elif h == 1:
-        return dict(shape='line', direction='horizontal', y=first_pos[1], length=len(rectangle_positions))
+        return dict(shape='line', direction='horizontal', y=first_pos[0], start_x=rectangle['tl_x'], length=len(rectangle_positions))
     else:
-        result = dict(shape='rectangle', buttomleft=(rectangle['tl_x'],rectangle['tl_y']), width=w, height=h)
+        result = dict(shape='rectangle', topleft_yx=(rectangle['tl_y'], rectangle['tl_x']), height=h, width=w)
         if rectangle['thickness'] != 0:
             result['thickness'] = rectangle['thickness']
         return result
@@ -364,38 +363,39 @@ def get_object_as_lines_topological(obj: Object, direction: str) -> list[dict]:
 
     return results
     
+def find_rectangle_in_positions_(positions: set):
+    xs = [x for y, x in positions]
+    ys = [y for y, x in positions]
+    min_x, max_x, min_y, max_y  = min(xs), max(xs), min(ys), max(ys)
+    W, H = max_x - min_x + 1, max_y - min_y + 1
 
+    filled_positions = set(get_rectangle_positions_(min_y, min_x, W, H, t=0))
+    if positions == filled_positions:
+        return dict(shape='rectangle', positions=list(filled_positions), w=W, h=H, tl_x=min_x, tl_y=min_y, thickness=0)
+    
+    # prioritize w+h, so a 4x4 rectangle is found before a 17x1 line
+    for w, h in get_rectangles_ordered_by_area_(W,H):
+        max_border_thickness = max(1, min(w, h) // 2)
+        max_tl_x = max_x - w + 1
+        max_tl_y = max_y - h + 1
+        for tl_x in range(min_x, max_tl_x + 1):
+            for tl_y in range(min_y, max_tl_y + 1):                 
+                for thickness in range(max_border_thickness,0,-1): # t=0 (filled) is not included here and handled above
+                    rect_positions_array = get_rectangle_positions_(tl_y, tl_x, w, h, thickness)
+                    rect_positions = set(rect_positions_array)
+                    # rect_positions = set(map(tuple, rect_positions_array))
+                    if rect_positions <= positions:
+                        return dict(shape='rectangle', positions=list(rect_positions), w=w, h=h, tl_x=tl_x, tl_y=tl_y, thickness=thickness)
+    return None
 
 def get_object_as_rectangles_and_lines_topological(obj: Object) -> list[dict]:
     """ Example: for a blue square filled with black, if object is returned by get_grid_objects with univalued=True, then object contains holes (topogically), but does not contain black cells.
     Object is not required to be univalued, but by considering only the position information and not the colors, it is virtually treated as such.
-    """ 
-    # TODO: find rectangles (inclduing zones?, i.e., with boundaries as borders --> describe blacks as well)
-    def _find_rectangle_in_positions(positions):        
-        xs = [x for y, x in positions]
-        ys = [y for y, x in positions]
-        min_x, max_x, min_y, max_y  = min(xs), max(xs), min(ys), max(ys)
-        W, H = max_x - min_x + 1, max_y - min_y + 1
-        
-        # prioritize w+h, so a 4x4 rectangle is found before a 17x1 line
-        for w, h in get_rectangles_ordered_by_area_(W,H):
-            max_border_thickness = max(1, min(w, h) // 2)
-            max_tl_x = max_x - w + 1
-            max_tl_y = max_y - h + 1
-            for tl_x in range(min_x, max_tl_x + 1):
-                for tl_y in range(min_y, max_tl_y + 1):                 
-                    for thickness in range(max_border_thickness,-1,-1): # 0 for points and lines (0D/1D objects)
-                        rect_positions_array = get_rectangle_positions_(tl_y, tl_x, w, h, thickness)
-                        rect_positions = set(rect_positions_array)
-                        # rect_positions = set(map(tuple, rect_positions_array))
-                        if rect_positions <= positions:
-                            return dict(shape='rectangle', positions=list(rect_positions), w=w, h=h, tl_x=tl_x, tl_y=tl_y, thickness=thickness)
-        return None
-    
+    """
     results = []
     positions = set(pos for pos, _ in obj)
     while positions:
-        rect = _find_rectangle_in_positions(positions)        
+        rect = find_rectangle_in_positions_(positions)        
         if rect is None:
             break
         else:
@@ -480,3 +480,33 @@ def get_grid_objects_hierarchy(grid: Grid, univalued: bool, diagonal: bool, with
         _set_children_objs(root)
 
     return roots
+
+@llm_tool
+def put_obj_on_grid(grid: Grid, obj: Object, clip: bool=True) -> Grid:
+    """ Put `object` on `grid`. If `clip=False`, then the grid must have enough space for the object's coordinates. """
+    # tl_y, tl_x = tl_yx
+    tl_y, tl_x = 0, 0
+    gh, gw = len(grid), len(grid[0])
+    for (y,x), col in obj:
+        if not clip or (y+tl_y < gh and x+tl_x < gw): # if clip is False, we try to set grid anyway
+            grid[y+tl_y][x+tl_x] = col
+    return grid
+    
+@llm_tool
+def move_object(obj: Object, tl_yx: tuple[int, int]=(0, 0)) -> Object:
+    """ Move `object` so that topleft yx-coordinate of the object's bounding box coincides with `tl_xy`. """
+    tl_y, tl_x = tl_yx
+    positions = set(pos for pos, _ in obj)
+    xs = [x for y, x in positions]
+    ys = [y for y, x in positions]
+    min_x, min_y  = min(xs), min(ys)
+    new_obj = [((y-min_y+tl_y, x-min_x+tl_x), col) for (y,x),col in obj]
+    return new_obj
+
+@llm_tool
+def filter_univalued_objects_by_color(objs: list[Object], color: int):
+    return [obj for obj in objs if obj[0][1] == color]
+
+@llm_tool
+def filter_objects_by_size(objs: list[Object], size: int):
+    return [obj for obj in objs if len(obj) == size]

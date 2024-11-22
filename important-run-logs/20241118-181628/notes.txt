@@ -1,0 +1,3 @@
+SimpleStateMachineDistinctPairswithToolsAndLense2(max_num_failures=5)
+LLMs=gpt-4o,gpt-4o (images stripped via setting result.states['ask_for_code']['llm'] = lambda: LLMInterface.ADVANCED_TEXT etc)
+

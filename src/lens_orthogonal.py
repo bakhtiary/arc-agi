@@ -2,6 +2,15 @@ from tools_src_mini import (Object, get_num_colors, get_object_as_rectangles_and
     describe_rectangle_or_line_or_point_univalued,
     color_to_str_dict_, has_hole, obj_to_univalued)
 
+def bounding_box_(obj: Object) -> tuple[tuple[int,int],tuple[int,int]]:
+    """ Returns ((tl_y,tl_x),(br_y,br_x)) where t/b is for top/bottom and r/l for right/left """
+    positions = set(pos for pos, _ in obj)
+    xs = [x for y, x in positions]
+    ys = [y for y, x in positions]
+    min_x, max_x, min_y, max_y  = min(xs), max(xs), min(ys), max(ys)
+    return ((min_y, min_x), (max_y, max_x))
+
+
 def dict_to_str(d: dict) -> str:
     return f'({", ".join(f"{key}={value}" for key, value in d.items())})'
 
@@ -52,7 +61,6 @@ def describe_objects_orthogonal_hierarchy(objs: list[dict], univalued: bool) -> 
                 children.append(describe_obj_(child_obj))
             result['children'] = children            
         return result
-
     descs = []
     for obj in objs:
         descs.append(describe_obj_(obj))
@@ -76,7 +84,8 @@ def describe_object_orthogonal_univalued(obj: Object) -> dict:
     # elif: traingles ...
     # elif: L-shapes ...
     else:
-        result = dict(shape='irregular', size=len(obj), color=color_to_str_dict_[color], has_hole=has_hole(obj))
+        result = dict(shape='irregular', size=len(obj), bounding_box=bounding_box_(obj),
+            color=color_to_str_dict_[color], has_hole=has_hole(obj))
         
         # result.update(as_rectangles=[], as_horizontal_lines=[], as_vertical_lines=[])
         
@@ -115,11 +124,11 @@ def describe_object_orthogonal_colored(obj: Object) -> dict:
     # elif: traingles ...
     # elif: L-shapes ...
     else:
-        result = dict(shape='irregular', size=len(obj))
+        result = dict(shape='irregular', size=len(obj), bounding_box=bounding_box_(obj))
         if len(colors) == 1:
-            result.update(color=colors[0], has_hole=has_hole(obj))
+            result.update(color=colors[0], has_hole=has_hole(obj)) # add has_hole at the end, to be consistent with elsewhere
         else:
-            result.update(color=colors_str, has_hole=has_hole(obj))
+            result.update(color=colors_str, has_hole=has_hole(obj)) # add has_hole at the end, to be consistent with elsewhere
         
         # result.update(as_rectangles=[], as_horizontal_lines=[], as_vertical_lines=[])
         

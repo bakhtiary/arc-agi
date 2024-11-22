@@ -16,7 +16,7 @@ class LensRunner:
         self.messages.append(message)
         print(message)
 
-    def run_code(self, code: str, task: dict):  # TODO run task in another thread or process for a limited amount of time
+    def run_code(self, code: str, task: dict):
         err_content = []
         try:
             local_namespace = {}

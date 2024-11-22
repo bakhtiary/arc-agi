@@ -8,14 +8,16 @@ class LiteLLMInterface(LLMInterface):
         self.vision_model = vision_model
         self.text_model = text_model
 
-    def llm_name_translate(self, generic_name):
-        if 'text' in generic_name:
+    def llm_name_translate(self, llm_tag):
+        if 'text' in llm_tag:
             return self.text_model
         else:
             return self.vision_model
         
-    def chat_with_llm(self, messages, llm: str, resp_format=None):
-        llm = self.llm_name_translate(llm)
+    def chat_with_llm(self, messages, llm_tag: str, resp_format=None):
+        if llm_tag in [LLMInterface.TEXT, LLMInterface.TEXT_ADVANCED]:
+            messages = self.prune_images(messages)
+        llm = self.llm_name_translate(llm_tag)
         if resp_format is None:
             return self.chat_with_llm_simple_(messages, llm)
         else:

@@ -1,7 +1,7 @@
 import unittest
 
 from dataset import LocalDataset
-from tools_src_mini import (get_filled_positions, get_grid_objects_as_flat_list, get_object_as_rectangles_and_lines_topological, get_rectangle_positions_,
+from tools_src_mini import (find_rectangle_in_positions_, get_filled_positions, get_grid_objects_as_flat_list, get_object_as_rectangles_and_lines_topological, get_rectangle_positions_,
     get_rectangles_ordered_by_area_, has_hole)
 
 class TestGetObjects(unittest.TestCase):
@@ -51,9 +51,9 @@ class GetRectanglesOrderedByArea(unittest.TestCase):
     def test_it_works(self):
         self.assertEqual(list(get_rectangles_ordered_by_area_(4,4)), [(4, 4), (3, 4), (4, 3), (3, 3), (2, 4), (4, 2), (2, 3), (3, 2), (1, 4), (2, 2), (4, 1), (1, 3), (3, 1), (1, 2), (2, 1), (1, 1)])
 
-class TestGetRectPositions(unittest.TestCase):
+class TestGetRectanglePositions(unittest.TestCase):
     def test_it_works(self):
-        self.assertEqual(get_rectangle_positions_(bl_y=2,bl_x=1,w=3,h=4,t=1),
+        self.assertEqual(get_rectangle_positions_(tl_y=2,tl_x=1,w=3,h=4,t=1),
             [(2, 1), (2, 2), (2, 3), (3, 1), (3, 3), (4, 1), (4, 3), (5, 1), (5, 2), (5, 3)])
         self.assertEqual(len(get_rectangle_positions_(2,2,4,5,2)), 20)
         self.assertEqual(len(get_rectangle_positions_(2,2,5,5,2)), 25 - 1)
@@ -71,6 +71,45 @@ class TestGetRectPositions(unittest.TestCase):
     def test_thickness_2(self):
         self.assertEqual(len(get_rectangle_positions_(1,1,5,5,2)), 24)
 
+class TestFindRectangleInPositions(unittest.TestCase):
+    def test_it_works(self):
+        positions = [(0,0),(0,1),(0,2),(1,0),(1,2),(2,0),(2,1),(2,2)]
+        rect = find_rectangle_in_positions_(set(positions))
+        expected = dict(shape='rectangle', positions=positions, w=3, h=3, tl_x=0, tl_y=0, thickness=1)
+        self.assertEqual(set(rect['positions']), set(positions))
+        expected['positions'] = rect['positions']
+        self.assertEqual(rect, expected)
+
+    def test_thicker(self):
+        grid = [[1,1,1,1,1],
+                [1,1,1,1,1],
+                [1,1,0,1,1],
+                [1,1,1,1,1],
+                [1,1,1,1,1]]
+        positions = [(y,x) for y in range(len(grid)) for x in range(len(grid[0])) if grid[y][x] == 1]
+        rect = find_rectangle_in_positions_(set(positions))
+        expected = dict(shape='rectangle', positions=positions, w=5, h=5, tl_x=0, tl_y=0, thickness=2)
+        self.assertEqual(set(rect['positions']), set(positions))
+        expected['positions'] = rect['positions']
+        self.assertEqual(rect, expected)
+    
+    def test_filled(self):
+        positions = [(0,0),(0,1),(1,0),(1,1)]
+        rect = find_rectangle_in_positions_(set(positions))
+        expected = dict(shape='rectangle', positions=positions, w=2, h=2, tl_x=0, tl_y=0, thickness=0)
+        self.assertEqual(set(rect['positions']), set(positions))
+        expected['positions'] = rect['positions']
+        self.assertEqual(rect, expected)
+
+    def test_filled_translated(self):
+        positions = [(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]
+        rect = find_rectangle_in_positions_(set(positions))
+        expected = dict(shape='rectangle', positions=positions, w=3, h=3, tl_x=1, tl_y=1, thickness=0)
+        self.assertEqual(set(rect['positions']), set(positions))
+        expected['positions'] = rect['positions']
+        self.assertEqual(rect, expected)
+        
+
 class TestGetFilledPositions(unittest.TestCase):
     def test_it_works(self):
         positions = [(1, 2), (2, 1), (3, 1), (1, 1), (2, 3), (3, 3), (3, 2), (1, 3)]
@@ -85,8 +124,15 @@ class TestGetObjectAsRectanglesAndLinesTopological(unittest.TestCase):
         print(ret)
         self.assertEqual(ret['thickness'], 1)
 
-    def test_solid(self):
+    def test_solid_square(self):
         positions = [(1, 2), (2, 1), (3, 1), (1, 1), (2, 3), (3, 3), (3, 2), (1, 3), (2,2)]
+        obj = [(pos, 0) for pos in positions]
+        ret = get_object_as_rectangles_and_lines_topological(obj)[0]
+        print(ret)
+        self.assertEqual(ret['thickness'], 1)
+
+    def test_solid_rectangle(self):
+        positions = [(1, 1), (1, 2), (2, 1), (2, 2), (3, 1), (3, 2)]
         obj = [(pos, 0) for pos in positions]
         ret = get_object_as_rectangles_and_lines_topological(obj)[0]
         print(ret)

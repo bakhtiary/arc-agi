@@ -1,0 +1,1 @@
+SimpleStateMachineDistinctPairswithToolsAndLense2(max_num_failures=5) LLMs=gpt-4o,gpt-4o (images not stripped via states['ask_for_code']['llm'] = lambda: LLMInterface.VISION etc)

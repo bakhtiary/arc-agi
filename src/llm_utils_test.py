@@ -2,7 +2,7 @@ from pathlib import Path
 import tempfile
 from unittest import TestCase
 
-from llm_utils import HistoryManager, extract_code
+from llm_utils import HistoryManager, LLMInterface, extract_code
 
 
 class TestExtractCode(TestCase):
@@ -41,4 +41,36 @@ class TestHistoryManager(TestCase):
         self.assertEqual(len(history_manager.get_messages(cur_tst=2)), 3)
         self.assertEqual(len(history_manager.get_messages(cur_tst=3)), 2)
         self.assertEqual(len(history_manager.get_messages(cur_tst=4)), 0)
+
+    
+    def test_ttl_works_deeper_ttl(self):
+        history_manager = HistoryManager()
+        with history_manager.start_new_message('user', 'gpt-4o', tst=1):
+            history_manager.add_text('hi')
+            history_manager.add_text('how are ya?')
+            history_manager.add_image([[1]])
+            history_manager.add_text('hi2')
+        history_manager.set_ttl_last_elem(1)
+        history_manager.add_singletone_text_message('user', 'a prompt 1', 'gpt', tst=2)
+        history_manager.add_singletone_text_message('user', 'a prompt 2', 'gpt', tst=2)
+        history_manager.set_ttl_last_pair(2, 2)
+        self.assertEqual(len(history_manager.get_messages(cur_tst=None)), 3)
+        self.assertEqual(len(history_manager.get_messages(cur_tst=1)), 3)
+        self.assertEqual(len(history_manager.get_messages(cur_tst=2)), 3)
+        self.assertEqual(len(history_manager.get_messages(cur_tst=3)), 2)
+        self.assertEqual(len(history_manager.get_messages(cur_tst=4)), 2)
+        self.assertEqual(len(history_manager.get_messages(cur_tst=5)), 0)
+
+    def test_prune_images(self):
+        history_manager = HistoryManager()
+        with history_manager.start_new_message('user', 'gpt-4o', tst=1):
+            history_manager.add_text('hi')
+            history_manager.add_text('how are ya?')
+            history_manager.add_image([[1]])
+            history_manager.add_text('hi2')
+        history_manager.set_ttl_last_elem(1)
+        history_manager.add_singletone_text_message('user', 'a prompt 1', 'gpt', tst=2)
+        messages = history_manager.get_messages(cur_tst=None)
+        messages = LLMInterface().prune_images(messages)
+        self.assertTrue(all(cont['type'] == 'text' for cont in messages[0]['content']))
             

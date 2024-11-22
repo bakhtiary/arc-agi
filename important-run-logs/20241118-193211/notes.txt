@@ -1,0 +1,3 @@
+SimpleStateMachineDistinctPairswithToolsAndLense2(max_num_failures=5) LLMs=gpt-4o,o1 (images stripped via states['ask_for_code']['llm'] = lambda: LLMInterface.ADVANCED_TEXT, etc)
+I stopped it very early, there is 1 task is solved only with this task (05269061), 1 that is only solved by this and 20241110-130119 (855e0971),
+and 1 that is solved by this, 20241110-130119, and 20241106-230542 (all o1) (beb8660c)

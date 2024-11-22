@@ -24,7 +24,7 @@ class QwenLocalLLMInterface(LLMInterface):
         super().__init__()
         self.timeout_seconds = timeout_seconds
 
-    def llm_name_translate(self, generic_name):
+    def llm_name_translate(self, llm_tag):
         return 'qwen'
 
     def messages_to_local_llm_format(self, messages):
@@ -63,14 +63,14 @@ class QwenLocalLLMInterface(LLMInterface):
         
         return results
 
-    def chat_with_llm(self, messages, llm, resp_format=None):
+    def chat_with_llm(self, messages, llm_tag, resp_format=None):
         if resp_format is not None:
             raise NotImplementedError('resp_format not supported for local llms')
         
-        return self.chat_with_llm_simple(messages, llm)
+        return self.chat_with_llm_simple(messages, llm_tag)
 
 
-    def chat_with_llm_simple(self, messages, llm):
+    def chat_with_llm_simple(self, messages, llm_tag):
         if self.timeout_seconds is not None:
             signal.signal(signal.SIGALRM, handler)
             signal.alarm(self.timeout_seconds)

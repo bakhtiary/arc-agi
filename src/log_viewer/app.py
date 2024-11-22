@@ -2,6 +2,7 @@ import os
 from collections import defaultdict
 import itertools
 from pathlib import Path
+import re
 
 
 from flask import Flask, render_template, jsonify, request
@@ -20,7 +21,7 @@ log_root_dirs = [Path('important-run-logs'), Path('logs')]
 
 app = Flask(__name__)
 # Uncomment for profiling
-app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=(str(current_file_dir.parent),))
+# app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=(str(current_file_dir.parent),))
 
 def get_task_level(dataset, task_id):
     log_summary_task = get_log_summary_by_tasks(log_root_dirs)
@@ -243,6 +244,7 @@ def get_content(root_dir, log_id, task_id, md_file_id):
     if os.path.exists(md_file):
         with open(md_file, 'r', encoding='utf-8') as file:
             md_content = file.read()
+        md_content = re.sub(r'^(.*\(shape=.*\))$', r'<pre>\1</pre>', md_content, flags=re.MULTILINE)
         html_content = markdown.markdown(
             md_content,
             tab_length=2,

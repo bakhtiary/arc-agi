@@ -93,12 +93,10 @@ def draw_single_axis_pcolormesh(ax: matplotlib.axes.Axes, grid, draw_edges=True,
     #   7 0 7
     #   7 7 0
     # (see https://arcprize.org/play?task=007bbfb7)
-    # However, we don't depict it inverted so that LLM understand it more easily, sp. in the code it generates.
-    # Therefore, we depict the same from bottom to top as:
-    #   7 7 0
-    #   7 0 7
-    #   7 0 7
-    #ax.invert_yaxis() # --> no need
+    # This is the same way that LLM understand lists of lists (... When you provide a grid as a list of lists ... to me,
+    # I typically interpret it from top to bottom ... (chat with o1-preview)). Therefore, we use the following line
+    # to invert the grid (equivalent to `imshow`'s `origin='upper'``):
+    ax.invert_yaxis()
     
     ax.set_aspect('equal', adjustable='box')
     ax.set_xlim(0,len(grid[0]))
@@ -112,6 +110,8 @@ def draw_single_axis_pcolormesh(ax: matplotlib.axes.Axes, grid, draw_edges=True,
         #ax.set_xticks(*integerize_labels(ax.get_xticks(), ax.get_xticklabels()))
         xticks = range(0,len(grid[0]),max(1, len(grid[0])//6))
         ax.set_xticks(xticks, map(str, xticks))
+        ax.xaxis.set_ticks_position('top')  # Move ticks to the top
+        ax.xaxis.set_label_position('top')
         # reverse needed for official depiction (see above)
         #ax.set_yticks(*integerize_labels(ax.get_yticks(), ax.get_yticklabels()))
         yticks = range(0,len(grid),max(1, len(grid)//6))

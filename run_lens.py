@@ -11,9 +11,9 @@ from tools_src_mini import get_grid_objects_hierarchy
 
 LOG_DIR = Path('logs-etc') / 'lens' / 'orthogonal' / datetime.now().strftime('%Y%m%d-%H%M%S')
 
-def grid_to_lens_html(grid):
+def grid_to_lens_html(grid, diagonal=True):
     result = f'<div><img src="data:image/jpeg;base64,{single_grid_to_base64(grid, draw_edges=False, draw_spine_border=True)}"></div>'
-    objs = get_grid_objects_hierarchy(grid, univalued=True)
+    objs = get_grid_objects_hierarchy(grid, univalued=True, diagonal=diagonal)
     descs = describe_objects_orthogonal_hierarchy(objs, univalued=True)
     return result + '<pre>' + '\n'.join(desc_to_nested_str(desc) for desc in descs) + '</pre>'
 
@@ -23,6 +23,8 @@ if __name__ == '__main__':
     average_ids = ['91714a58', '50cb2852', 'a61f2674', '85c4e7cd', 'd0f5fe59', '49d1d64f', 'b60334d2', 'd511f180', 
         'e98196ab', '56ff96f3']
     task_ids = hard_ids + average_ids
+
+    task_ids = ['05269061']
 
     LOG_DIR.mkdir(parents=True, exist_ok=True)
 

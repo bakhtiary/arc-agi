@@ -16,11 +16,17 @@ def extract_solve_fn(assistant_reply):
     return None
 
 def extract_and_run_mapping_code(response, task_id: str, dataset: Dataset, tool_codes=None):
-    # code = extract_solve_fn(response)
-    code = extract_code(response)
+    code = extract_solve_fn(response)
+    # code = extract_code(response), # Commented, as there might be code blocks in the explanation, such as this:
+    #  ...
+    #  - **Solution**: Introduced a `shift` variable set to `1`. This shifts the color indexing by one position, ensuring that the cycle starts with the second color. The updated line is:
+    #   ```python
+    #   color_index = (i + j + shift) % n_colors
+    #   ```
+    # ...
     if code is None:
         return '''Code block not found in your response. Please ensure you enclose your function `solve` in triple backticks.'''
-    if tool_codes != None:
+    if tool_codes is not None:
         code = tool_codes + '\n' + code
     return run_task_code_read_outputs_with_timeout(task_id, dataset, code.encode(), 20, current_file_directory/'state_machine_solver_code_runner.py')
 

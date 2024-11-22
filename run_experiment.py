@@ -1,12 +1,10 @@
-# Todo:
-#   Test
-#   Add A critic/summarizer LLM
-#   Add tools (like shape counts, etc), sp. based on another LLMs recommendation (similar to RAG)
-#   Run python function in a seperate process for a limitted amount of time
-
 from datetime import datetime
 from pathlib import Path
 import warnings
+
+from llm_utils import LLMInterface
+from simple_state_machine_distinct_pairs_with_tools_and_lense_1 import SimpleStateMachineDistinctPairsWithToolsAndLense1
+from simple_state_machine_distinct_pairs_with_tools_and_lense_2 import SimpleStateMachineDistinctPairsWithToolsAndLense2
 warnings.filterwarnings('ignore', category=UserWarning, module='pydantic.main')
 
 import litellm
@@ -47,6 +45,13 @@ def SimpleStateMachineDistinctPairswithTools_factory(task_id, dataset):
     result.max_num_failed = 10
     return result
 
+def SimpleStateMachineDistinctPairswithToolsAndLense2_factory(task_id, dataset):
+    result = SimpleStateMachineDistinctPairsWithToolsAndLense2(task_id, dataset, which_pairs='all')
+    result.max_num_failed = 30
+    result.states['ask_for_code']['llm'] = lambda: LLMInterface.VISION
+    result.states['mapping_code_failed']['llm'] = lambda: LLMInterface.VISION
+    return result
+
 def kaggle_main():
     from local_llm_interface import QwenLocalLLMInterface
  
@@ -66,6 +71,11 @@ def kaggle_main():
 
 
 def local_main():
+    llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='o1-mini')
+    # llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='gpt-4o')
+    dataset = LocalDataset('training')
+    # dataset = LocalDataset('evaluation')
+
     t1 = ['c8f0f002','952a094c'] # very easy, very hard
     t1_easy = ['c8f0f002'] # the easy
     t1_hard = ['952a094c'] # o1 experiments, the hard
@@ -82,17 +92,20 @@ def local_main():
     super_simple_ids = ['ce22a75a', 'c8f0f002']
     pre_dealine_mix = hard_ids + average_ids + simple_ids + super_simple_ids
     
-    tX = ['50cb2852'] #jsonl error at http://127.0.0.1:5000/#logs/20241106-201845/50cb2852/1.full.md
+    t2 = ['50cb2852'] #jsonl error at http://127.0.0.1:5000/#logs/20241106-201845/50cb2852/1.full.md
+    t3 = ['05269061']
     
     for_dsl = ['beb8660c', '85c4e7cd', 'a2fd1cf0']
 
     # task_ids = t1_easy
     # task_ids = pre_dealine_mix
     # task_ids = t_order_bars_by_color
-    task_ids = pre_dealine_mix
+    # task_ids = pre_dealine_mix
+    # task_ids = t3
     
-    # paper_submission_ids = ['9def23fe', '6f473927', '00dbd492', '33b52de3', '12eac192', '351d6448', 'e6de6e8f', 'e760a62e', '62ab2642', 'c8b7cc0f', '48131b3c', '4364c1c4', '25094a63', '55783887', '8fbca751', '3490cc26', 'e7a25a18', '90347967', '93c31fbe', '456873bc']
-    # task_ids = paper_submission_ids
+    at_deadline_ids = ['9def23fe', '6f473927', '00dbd492', '33b52de3', '12eac192', '351d6448', 'e6de6e8f', 'e760a62e', '62ab2642', 'c8b7cc0f', '48131b3c', '4364c1c4', '25094a63', '55783887', '8fbca751', '3490cc26', 'e7a25a18', '90347967', '93c31fbe', '456873bc']
+    # task_ids = at_deadline_ids
+    task_ids = pre_dealine_mix
 
     # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
@@ -117,7 +130,6 @@ def local_main():
     # 'd511f180', 'bb43febb', '27a28665', '44f52bb0', 'e9614598', 'bda2d7a6', 'd4469b4b'
     #             ] # the ones with a 'signal' what ever that means!
     
-    llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='o1-mini')
     
     # state_machine_solver = StateMachineSolver(SimpleStateMachineOneState)
     # state_machine_solver = StateMachineSolver(SimpleStateMachineWithO1)
@@ -128,11 +140,9 @@ def local_main():
     #     SimpleStateMachineAllInOne, SimpleStateMachineSinglePair])
     
 
-    state_machine_solver = StateMachineSolverWithRestart(SimpleStateMachineDistinctPairswithTools_factory, llm_interface, num_restarts=1)
+    state_machine_solver = StateMachineSolverWithRestart(
+        SimpleStateMachineDistinctPairswithToolsAndLense2_factory, llm_interface, num_restarts=1)
     # state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools)
-    
-    dataset = LocalDataset('training')
-    # dataset = LocalDataset('evaluation')
     
     experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=6)
 

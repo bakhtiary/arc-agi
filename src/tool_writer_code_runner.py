@@ -11,7 +11,7 @@ class CodeRunner:
     def emit_grid(self, grid):
         print(json.dumps({'grid': grid}))
 
-    def do_run_code(self, code: str):  # TODO run task in another thread or process for a limited amount of time
+    def do_run_code(self, code: str):
         try:
             local_namespace = {}
             exec(code, local_namespace)
