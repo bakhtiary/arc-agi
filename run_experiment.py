@@ -3,8 +3,7 @@ from pathlib import Path
 import warnings
 
 from llm_utils import LLMInterface
-from simple_state_machine_distinct_pairs_with_tools_and_lense_1 import SimpleStateMachineDistinctPairsWithToolsAndLense1
-from simple_state_machine_distinct_pairs_with_tools_and_lense_2 import SimpleStateMachineDistinctPairsWithToolsAndLense2
+from simple_state_machine_with_tools_and_lens_2 import SimpleStateMachineWithToolsAndLens2
 warnings.filterwarnings('ignore', category=UserWarning, module='pydantic.main')
 
 import litellm
@@ -45,11 +44,11 @@ def SimpleStateMachineDistinctPairswithTools_factory(task_id, dataset):
     result.max_num_failed = 10
     return result
 
-def SimpleStateMachineDistinctPairswithToolsAndLense2_factory(task_id, dataset):
-    result = SimpleStateMachineDistinctPairsWithToolsAndLense2(task_id, dataset, which_pairs='all')
-    result.max_num_failed = 30
-    result.states['ask_for_code']['llm'] = lambda: LLMInterface.VISION
-    result.states['mapping_code_failed']['llm'] = lambda: LLMInterface.VISION
+def SimpleStateMachineWithToolsAndLens2_factory(task_id, dataset):
+    result = SimpleStateMachineWithToolsAndLens2(task_id, dataset, which_pairs='all')
+    result.max_num_failed = 20
+    # result.states['ask_for_code']['llm'] = lambda: LLMInterface.VISION
+    # result.states['mapping_code_failed']['llm'] = lambda: LLMInterface.VISION
     return result
 
 def kaggle_main():
@@ -106,6 +105,7 @@ def local_main():
     at_deadline_ids = ['9def23fe', '6f473927', '00dbd492', '33b52de3', '12eac192', '351d6448', 'e6de6e8f', 'e760a62e', '62ab2642', 'c8b7cc0f', '48131b3c', '4364c1c4', '25094a63', '55783887', '8fbca751', '3490cc26', 'e7a25a18', '90347967', '93c31fbe', '456873bc']
     # task_ids = at_deadline_ids
     task_ids = pre_dealine_mix
+    # task_ids = t1_easy
 
     # task_ids = ['ce22a75a'] # uses lens code alot
     # md analysis by amir --> ff28f65a
@@ -141,7 +141,7 @@ def local_main():
     
 
     state_machine_solver = StateMachineSolverWithRestart(
-        SimpleStateMachineDistinctPairswithToolsAndLense2_factory, llm_interface, num_restarts=1)
+        SimpleStateMachineWithToolsAndLens2_factory, llm_interface, num_restarts=1)
     # state_machine_solver = StateMachineSolver(SimpleStateMachineDistinctPairswithTools)
     
     experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=6)

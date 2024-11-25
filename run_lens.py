@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from dataset import LocalDataset
 from image_utils import single_grid_to_base64
-from lens_orthogonal import desc_to_nested_str, describe_objects_orthogonal_hierarchy
+from lens_orthogonal import desc_to_nested_str, describe_objects_as_rectangulars_hierarchy
 from tools_src_mini import get_grid_objects_hierarchy
 
 
@@ -14,7 +14,7 @@ LOG_DIR = Path('logs-etc') / 'lens' / 'orthogonal' / datetime.now().strftime('%Y
 def grid_to_lens_html(grid, diagonal=True):
     result = f'<div><img src="data:image/jpeg;base64,{single_grid_to_base64(grid, draw_edges=False, draw_spine_border=True)}"></div>'
     objs = get_grid_objects_hierarchy(grid, univalued=True, diagonal=diagonal)
-    descs = describe_objects_orthogonal_hierarchy(objs, univalued=True)
+    descs = describe_objects_as_rectangulars_hierarchy(objs, univalued=True)
     return result + '<pre>' + '\n'.join(desc_to_nested_str(desc) for desc in descs) + '</pre>'
 
 if __name__ == '__main__':

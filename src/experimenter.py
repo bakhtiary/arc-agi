@@ -6,7 +6,7 @@ from multiprocessing import Pool
 import traceback
 
 from dataset import Dataset
-from log_utils import add_item_to_big_log, add_string_to_log
+from log_utils import add_item_to_experiment_log, add_string_to_log
 from task_utils import calc_score
 
 list_of_results = []
@@ -34,10 +34,10 @@ def _task_done(result):
     termination_reason = 'timeout' if solutions is None else 'success'
     score = calc_score(task_id, dataset, solutions, detailed=False)
 
-    add_string_to_log(f"# Termination information\n## Reason\nsuccess\n##Solutions\n{solutions}\n", log_file)
-    add_string_to_log(f"##Score\nscore is {score}\n", log_file)
+    add_string_to_log(f"# Termination information\n## Reason\n{termination_reason}\n## Solutions\n{solutions}\n", log_file)
+    add_string_to_log(f"## Score\nscore is {score}\n", log_file)
     print(f"Task done: {dataset=} {task_id=}, {score=}")
-    add_item_to_big_log(task_id, dataset, termination_reason, score, results_json_file)
+    add_item_to_experiment_log(task_id, dataset, termination_reason, score, results_json_file)
     list_of_results.append((task_id, dataset, log_file, solutions, termination_reason, score))
 
 
@@ -51,7 +51,7 @@ def _task_error(raised_exception):
         print(f'Task error: {raised_exception} ({raised_exception.ak_data})')
         add_string_to_log(f"# Termination information\n## Reason\nerror\n## Error data\n```\n{raised_exception}\n```\n## Error ak_data\n```\n{raised_exception.ak_data}\n```\n", log_file)
         add_string_to_log(f"##Score\nscore is 0.0\n", log_file)
-        add_item_to_big_log(task_id, dataset, 'error', 0.0, results_json_file, raised_exception, raised_exception.ak_data)
+        add_item_to_experiment_log(task_id, dataset, 'error', 0.0, results_json_file, raised_exception, raised_exception.ak_data)
     except:
         pass
 

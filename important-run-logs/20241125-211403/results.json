@@ -1,0 +1,27 @@
+{"task_id": "beb8660c", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "855e0971", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "b2862040", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "72ca375d", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "05269061", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "82819916", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "50cb2852", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "846bdb03", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "a61f2674", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "6d75e8bb", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "91714a58", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "49d1d64f", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "b60334d2", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "72322fa7", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "d511f180", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "85c4e7cd", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "4347f46a", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "56ff96f3", "dataset": "training", "termination_reason": "error", "score": 0.0, "error_data": "SyntaxError('invalid syntax', ('<unknown>', 23, 42, \"        min_row = min(min(y for (y, x), _) in obj['obj'] for obj in objs)\\n\", 23, 43))", "error_ak_data": "{'task_id': '56ff96f3', 'dataset': <dataset.LocalDataset object at 0x7fc7fd785f00>, 'log_file': PosixPath('logs/20241125-211403/56ff96f3/1.full.md'), 'trace_back': 'Traceback (most recent call last):\\n  File \"/home/me/arc-all/arc-agi/src/experimenter.py\", line 19, in solver_wrapper\\n    return solver(task_id, dataset, log_dir)\\n  File \"/home/me/arc-all/arc-agi/src/state_machine_multi_solver.py\", line 35, in __call__\\n    results = solver(task_id, dataset, log_dir, log_file)\\n  File \"/home/me/arc-all/arc-agi/src/state_machine_solver.py\", line 60, in __call__\\n    do_work_func(response)\\n  File \"/home/me/arc-all/arc-agi/src/simple_state_machine_with_tools_and_lens_2.py\", line 155, in extract_and_run_mapping_code\\n    results = extract_and_run_mapping_code_with_lens(response, self.task_id, self.dataset, tools_code=tools_codes)\\n  File \"/home/me/arc-all/arc-agi/src/state_machine_solver_utils.py\", line 35, in extract_and_run_mapping_code_with_lens\\n    code = keep_only_defs_in_llm_code(code)\\n  File \"/home/me/arc-all/arc-agi/src/code_utils.py\", line 51, in keep_only_defs_in_llm_code\\n    parsed = ast.parse(code)\\n  File \"/usr/lib/python3.10/ast.py\", line 50, in parse\\n    return compile(source, filename, mode, flags,\\n  File \"<unknown>\", line 23\\n    min_row = min(min(y for (y, x), _) in obj[\\'obj\\'] for obj in objs)\\n                                     ^\\nSyntaxError: invalid syntax\\n'}"}
+{"task_id": "56dc2b01", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "d0f5fe59", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "913fb3ed", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "d631b094", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "d4a91cb9", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "c8f0f002", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "e98196ab", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "ce22a75a", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "623ea044", "dataset": "training", "termination_reason": "timeout", "score": 0}

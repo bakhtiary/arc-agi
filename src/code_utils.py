@@ -46,6 +46,19 @@ def run_any_code_read_outputs_with_timeout(args: list[str], code: bytes, timeout
 
     return results
 
+
+def keep_only_defs_and_imports(code: str):
+    try:
+        parsed = ast.parse(code)
+    except:
+        return None
+    to_keep_list = [node for node in parsed.body if isinstance(node, ast.FunctionDef)
+        or isinstance(node, ast.Import) or isinstance(node, ast.ImportFrom)]
+    to_keep_src = ''
+    for to_keep in to_keep_list:
+        to_keep_src += ast.unparse(to_keep) + '\n\n'
+    return to_keep_src
+
 def generate_tools_docs_by_ast(input_file, tool_type):
     file_content = Path(input_file).read_text()
     parsed = ast.parse(file_content)

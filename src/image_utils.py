@@ -38,7 +38,7 @@ def single_grid_to_base64(grid, draw_edges=True, draw_spine_border=False) -> str
     plt.close(fig)
     return result
 
-def grids_all_in_one_to_base64(all_pairs, draw_edges=True, draw_spine_border=False) -> str:
+def grids_all_in_one_to_base64(all_pairs: list[dict], draw_edges=True, draw_spine_border=False) -> str:
     fig, axs = plt.subplots(len(all_pairs), 2, figsize=(10, 5*len(all_pairs)))
     for i, sample in enumerate(all_pairs):
         draw_single_axis(axs[i, 0], sample['input'], draw_edges=draw_edges, draw_spine_border=draw_spine_border)

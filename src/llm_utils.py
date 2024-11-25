@@ -7,18 +7,32 @@ import re
 import threading
 import warnings
 
+from code_utils import keep_only_defs_and_imports
 from image_utils import single_grid_to_base64
 from log_utils import add_string_to_log, message_to_md
 
 
+def extract_code_keep_only_defs_and_imports(assistant_reply):
+    code_blocks = re.findall(r'```(?:python)?\n(.*?)```', assistant_reply, re.DOTALL)
+    if not code_blocks:
+        return None
+    
+    code_blocks_to_keep = []
+    for code_block in code_blocks:
+        code_block = keep_only_defs_and_imports(code_block.strip())
+        if code_block:
+            code_blocks_to_keep.append(code_block.strip())
+    
+    code = '\n'.join(code_blocks_to_keep)
+    return code
+    
 def extract_code(assistant_reply):
     code_blocks = re.findall(r'```(?:python)?\n(.*?)```', assistant_reply, re.DOTALL)
-    if code_blocks:
-        code = '\n'.join([code_block.strip() for code_block in code_blocks])
-        return code
-    else:
+    if not code_blocks:
         return None
-
+    code = '\n'.join([code_block.strip() for code_block in code_blocks])
+    return code
+    
 class LLMInterface:
     TEXT_ADVANCED = 'text-advanced'
     TEXT = 'text'

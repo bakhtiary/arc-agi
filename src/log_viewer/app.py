@@ -10,11 +10,12 @@ from werkzeug.middleware.profiler import ProfilerMiddleware
 import markdown
 
 from calc_logs_statistics import get_log_summary_by_experiments, get_log_summary_by_tasks, task_summary_to_ladder
+from code_utils import keep_only_defs_and_imports
 from dataset import LocalDataset
 from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from state_machine_solver_utils import run_task_code_read_outputs_with_timeout
-from tools_src_mini import get_grid_objects_as_flat_list, get_grid_objects_hierarchy
-from lens_orthogonal import describe_objects_orthogonal_flat, describe_objects_orthogonal_hierarchy
+from tools_src_mini import parse_grid_as_objects, parsed_to_nested_str
+# from lens_orthogonal import describe_objects_as_rectangulars_flat, describe_objects_as_rectangulars_hierarchy
 
 current_file_dir = Path(__file__).parent
 log_root_dirs = [Path('important-run-logs'), Path('logs')]
@@ -237,14 +238,17 @@ def get_md_files(root_dir, log_id, task_id):
         md_files = []
     return jsonify({'md_files': md_files, 'task_level': get_task_level('training', task_id)})
 
+def preprocess_md_content(md_content: str) -> str:
+    md_content = md_content.replace('\\n', '\n')
+    md_content = re.sub(r'^(.*\(shape=.*\))$', r'<pre>\1</pre>', md_content, flags=re.MULTILINE)
+    return md_content
+
 @app.route('/content/<root_dir>/<log_id>/<task_id>/<md_file_id>')
 def get_content(root_dir, log_id, task_id, md_file_id):
     # Read and convert <root_dir>/<log_id>/<task_id>/<md_file_id> to HTML
     md_file = os.path.join(root_dir, log_id, task_id, md_file_id)
     if os.path.exists(md_file):
-        with open(md_file, 'r', encoding='utf-8') as file:
-            md_content = file.read()
-        md_content = re.sub(r'^(.*\(shape=.*\))$', r'<pre>\1</pre>', md_content, flags=re.MULTILINE)
+        md_content = preprocess_md_content(Path(md_file).read_text())
         html_content = markdown.markdown(
             md_content,
             tab_length=2,
@@ -261,6 +265,7 @@ def md_test():
     md_content = ''
     if request.method == 'POST':
         md_content = request.form.get('md_content', '')
+        md_content = preprocess_md_content(md_content)
         html_content = markdown.markdown(
             md_content,
             tab_length=3,
@@ -277,6 +282,7 @@ def solve_fn():
     html_content = ''
     if request.method == 'POST':
         code_ = request.form.get('code', '')
+        code_ = keep_only_defs_and_imports(code_)
         tools_codes = Path(current_file_dir.parent / 'tools_src_mini.py').read_text()
         code2_ = tools_codes + '\n\n' + code_
         outputs = run_task_code_read_outputs_with_timeout(task_id_, LocalDataset(dataset_),
@@ -303,23 +309,23 @@ def dicts_to_str(ds: list[dict]) -> str:
 
 def grid_to_lens_html(grid):
     result = f'<div><img src="data:image/jpeg;base64,{single_grid_to_base64(grid, draw_edges=False, draw_spine_border=True)}"></div>'
-    objs1 = get_grid_objects_as_flat_list(grid, univalued=True, diagonal=True, with_bg=False, bg_color=0)
-    objs2 = get_grid_objects_as_flat_list(grid, univalued=True, diagonal=False, with_bg=False, bg_color=0)
-    objs3 = get_grid_objects_as_flat_list(grid, univalued=False, diagonal=True, with_bg=False, bg_color=0)
-    objs4 = get_grid_objects_as_flat_list(grid, univalued=False, diagonal=False, with_bg=False, bg_color=0)
+    objs1 = parse_grid_as_objects(grid, univalued=True, diagonal=True, with_bg=False, bg_color=0)
+    objs2 = parse_grid_as_objects(grid, univalued=True, diagonal=False, with_bg=False, bg_color=0)
+    objs3 = parse_grid_as_objects(grid, univalued=False, diagonal=True, with_bg=False, bg_color=0)
+    objs4 = parse_grid_as_objects(grid, univalued=False, diagonal=False, with_bg=False, bg_color=0)
 
-    desc1 = describe_objects_orthogonal_flat(objs1, univalued=True)
-    desc2 = describe_objects_orthogonal_flat(objs2, univalued=True)
-    desc3 = describe_objects_orthogonal_flat(objs3, univalued=False)
-    desc4 = describe_objects_orthogonal_flat(objs4, univalued=False)
+    desc1 = parsed_to_nested_str(objs1, univalued=True)
+    desc2 = parsed_to_nested_str(objs2, univalued=True)
+    desc3 = parsed_to_nested_str(objs3, univalued=False)
+    desc4 = parsed_to_nested_str(objs4, univalued=False)
 
-    desc1 = dicts_to_str(desc1)
-    desc2 = dicts_to_str(desc2)
-    desc3 = dicts_to_str(desc3)
-    desc4 = dicts_to_str(desc4)
+    desc1 = parsed_to_nested_str(desc1)
+    desc2 = parsed_to_nested_str(desc2)
+    desc3 = parsed_to_nested_str(desc3)
+    desc4 = parsed_to_nested_str(desc4)
 
-    objs5 = get_grid_objects_hierarchy(grid)
-    desc5 = describe_objects_orthogonal_hierarchy(objs5, univalued=True)
+    objs5 = parse_grid_as_objects(grid, univalued=True, diagonal=True, with_bg=False, bg_color=0, hierarchical=True, object_describer='rectangular/irregular:raw')
+    desc5 = parsed_to_nested_str(objs5, univalued=True)
     # def _remove_pos(an_obj):
     #     # an_obj['size'] = len(an_obj['positions'])
     #     # del an_obj['positions']
@@ -377,7 +383,7 @@ def any_md():
     html_content = ''
     md_file = request.args.get('md_file', '')
     if Path(md_file).exists():
-        md_content = Path(md_file).read_text()
+        md_content = preprocess_md_content(Path(md_file).read_text())
         html_content = markdown.markdown(
             md_content,
             tab_length=3,

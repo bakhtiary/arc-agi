@@ -51,7 +51,8 @@ def message_to_md(message, prune_images, llm=None):
     return md
 
 
-def add_item_to_big_log(task_id, dataset, termination_reason, score, results_json_file, error_data=None, error_ak_data=None):
+def add_item_to_experiment_log(task_id, dataset, termination_reason, score, results_json_file, error_data=None, error_ak_data=None):
+    """ the central log of an experiment """
     assert termination_reason in ['success', 'error', 'timeout', 'n/a']
     log_obj = {
         'task_id': task_id,

@@ -2,10 +2,10 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from code_utils import generate_tools_docs_by_ast
+from code_utils import generate_tools_docs_by_ast, keep_only_defs_and_imports
 
 
-class CodeUnitsTest(unittest.TestCase):
+class TestCodeUtils(unittest.TestCase):
     def test_generate_tools_docs_by_ast_actual(self):
         print(generate_tools_docs_by_ast(Path(__file__).parent / 'tools_src_mini.py', tool_type='all'))
     
@@ -58,7 +58,28 @@ def as_indices(grid: Grid) -> list[tuple[int,int]]:
             self.assertNotIn('diagonal_neighbors', docs)
             self.assertNotIn('most_colors', docs)
 
+    def test_keep_only_defs_and_imports(self):
+        code = '''import sys
+        
+def f():
+    return 0
+
+x = f()
+assert x==1
+
+def g():
+    ...'''
+        new_code = keep_only_defs_and_imports(code)
+        self.assertEqual(new_code, '''import sys
+
+def f():
+    return 0
+
+def g():
+    ...
+
+''')
 
 if __name__ == '__main__':
-    CodeUnitsTest().test_generate_tools_docs_by_ast_actual()
+    TestCodeUtils().test_generate_tools_docs_by_ast_actual()
             

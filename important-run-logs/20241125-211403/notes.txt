@@ -1,0 +1,3 @@
+pre-deadline mix
+all 4o
+SimpleStateMachineWithToolsAndLens2
