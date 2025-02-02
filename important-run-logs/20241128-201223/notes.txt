@@ -1,0 +1,3 @@
+w SimpleStateMachineWithToolsAndLens3
+o1,o1
+ttl of ask_for_lens messes up the context

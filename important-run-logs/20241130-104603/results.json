@@ -1,0 +1,27 @@
+{"task_id": "b2862040", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "72ca375d", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "05269061", "dataset": "training", "termination_reason": "error", "score": 0.0, "error_data": "TypeError(\"'NoneType' object is not callable\")", "error_ak_data": "{'task_id': '05269061', 'dataset': <dataset.LocalDataset object at 0x7f0ff5786410>, 'log_file': PosixPath('logs/20241130-104603/05269061/1.full.md'), 'trace_back': 'Traceback (most recent call last):\\n  File \"/home/me/arc-all/arc-agi/src/experimenter.py\", line 19, in solver_wrapper\\n    return solver(task_id, dataset, log_dir)\\n  File \"/home/me/arc-all/arc-agi/src/state_machine_multi_solver.py\", line 35, in __call__\\n    results = solver(task_id, dataset, log_dir, log_file)\\n  File \"/home/me/arc-all/arc-agi/src/state_machine_solver.py\", line 54, in __call__\\n    any_message_sent = self.add_state_machine_messages(\\n  File \"/home/me/arc-all/arc-agi/src/state_machine_solver.py\", line 97, in add_state_machine_messages\\n    state_message_ret = state_message_func()\\n  File \"/home/me/arc-all/arc-agi/src/simple_state_machine_with_tools_and_lens_4.py\", line 202, in <lambda>\\n    lambda: (\\'list\\', self.send_all_pairs(with_descriptors=True)),\\n  File \"/home/me/arc-all/arc-agi/src/simple_state_machine_with_tools_and_lens_4.py\", line 328, in send_all_pairs\\n    results.append((\\'text\\', f\\'`{self.default_input_grid_lens_code}={self.default_input_grid_lens(grid)}`\\'))\\nTypeError: \\'NoneType\\' object is not callable\\n'}"}
+{"task_id": "beb8660c", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "855e0971", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "82819916", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "846bdb03", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "50cb2852", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "a61f2674", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "56dc2b01", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "6d75e8bb", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "91714a58", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "72322fa7", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "d0f5fe59", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "b60334d2", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "85c4e7cd", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "d511f180", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "49d1d64f", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "56ff96f3", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "4347f46a", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "623ea044", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "913fb3ed", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "e98196ab", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "c8f0f002", "dataset": "training", "termination_reason": "success", "score": 1}
+{"task_id": "ce22a75a", "dataset": "training", "termination_reason": "success", "score": 0}
+{"task_id": "d631b094", "dataset": "training", "termination_reason": "timeout", "score": 0}
+{"task_id": "d4a91cb9", "dataset": "training", "termination_reason": "timeout", "score": 0}
