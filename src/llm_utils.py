@@ -34,7 +34,7 @@ def extract_code(assistant_reply):
     return code
     
 class LLMInterface:
-    TEXT_ADVANCED = 'text-advanced'
+    TEXT_ADVANCED = 'text-advanced' # FIXME: seems that currently not used 
     TEXT = 'text'
     VISION = 'vision'
 
@@ -66,6 +66,11 @@ class LLMInterface:
             })
         return result
 
+def get_singleton_message(text: str, role: str) -> dict:
+    return {
+        'role': role,
+        'content': [{'type': 'text', 'text': text}]
+    }
 
         
 class HistoryManager:
@@ -143,7 +148,16 @@ class HistoryManager:
     def set_ttl_last_elem(self, last_ttl):
         self.ttls[-1] = last_ttl
 
+    def log_reply(self, assistant_reply):
+        message = get_singleton_message(assistant_reply, 'assistant')
+        if self.log_file is not None:
+            add_string_to_log(message_to_md(message, False),
+                self.log_file)
+
+
 def chat_with_llm(llm_intreface: LLMInterface, histoy_manager: HistoryManager,
     llm_tag: str, resp_format=None, cur_tst=None):
-        return llm_intreface.chat_with_llm(
+        assistant_reply = llm_intreface.chat_with_llm(
             histoy_manager.get_messages(cur_tst=cur_tst), llm_tag, resp_format)
+        histoy_manager.log_reply(assistant_reply)
+        return assistant_reply
