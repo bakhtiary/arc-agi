@@ -32,112 +32,14 @@ class SimpleStateMachineWithToolsBF:
         self.distinct_pairs = distinct_pairs
         self.which_pairs = which_pairs
         self.num_hypos = 20
-        self.cur_hypo_index = 0
         self.tools: list[dict]  = None # each tool is a dict {'name': 'f', 'signature': 'def f ...', 'code': 'import xx;\n...'}
-        self.hypotheses = None
-        self.default_input_grid_lens = None
-        self.default_output_grid_lens = None
-        self.default_input_grid_lens_code = None
-        self.default_output_grid_lens_code = None
-        self.default_co_grid_lens = None # TODO
-        self.monochromatic_useful = None
-        self.monochromatic_bg = None
-
-        if task_id == 'b2862040':
-            self.bg_color = BROWN
-        else:
-            self.bg_color = BLACK
-
-
-        self.descriptors = [
-            # objects/orthogonal
-            dict (
-                id='objects/orthogonal,with-bg/rectangulars/irregular:raw',
-                desc='A set of uivalued objects (orthogonally connected) described as rectangulars',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='objects', diagonal=False, with_bg=True, object_describer='rectangulars/irregular:raw'),
-                code='parse_grid_as_objects(grid, univalued=True, diagonal=False, with_bg=True, hierarchical=True, object_describer="rectangulars/irregular:raw")'
-            ),
-            dict(
-                id='objects/orthogonal,with-bg/rectangulars/irregular:rectangulars',
-                desc='A set of  univalued objects (orthogonally connected) described as rectangulars (+ irregulars as rectangulars)',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='objects', diagonal=False, with_bg=True, object_describer='rectangulars/irregular:rectangulars'),
-                code='parse_grid_as_objects(grid, univalued=True, diagonal=False, with_bg=True, hierarchical=True, object_describer="rectangulars/irregular:rectangulars")',
-            ),
-            dict (
-                id='objects/orthogonal,without-bg/rectangulars/irregular:raw',
-                desc='A set of uivalued objects (orthogonally connected) described as rectangulars',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='objects', diagonal=False, with_bg=False, object_describer='rectangulars/irregular:raw'),
-                code='parse_grid_as_objects(grid, univalued=True, diagonal=False, with_bg=False, bg_color={self.bg_color}, hierarchical=True, object_describer="rectangulars/irregular:raw")',
-            ),
-            dict(
-                id='objects/orthogonal,without-bg/rectangulars/irregular:rectangulars',
-                desc='A set of  univalued objects (orthogonally connected) described as rectangulars (+ irregulars as rectangulars)',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='objects', diagonal=False, with_bg=False, object_describer='rectangulars/irregular:rectangulars'),
-                code='parse_grid_as_objects(grid, univalued=True, diagonal=False, with_bg=False, bg_color={self.bg_color}, hierarchical=True, object_describer="rectangulars/irregular:rectangulars")',
-            ),
-            # dict (
-            #     desc='A set of univalued objects (orthogonally connected) described as rectangulars (+ irregulars as vertical lines)',
-            #     func=...
-            # ),
-            # dict(
-            #     desc='A set of univalued objects (orthogonally connected) described as rectangulars (+ irregulars as horizontal lines)'
-            # ),
-
-            # objects / diagonal
-            dict (
-                id='objects/diagonal,with-bg/rectangulars/irregular:raw',
-                desc='A set of uivalued objects (diagonally connected) described as rectangulars',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='objects', diagonal=True, with_bg=True, object_describer='rectangulars/irregular:raw'),
-                code='parse_grid_as_objects(grid, univalued=True, diagonal=True, with_bg=True, hierarchical=True, object_describer="rectangulars/irregular:raw")'
-
-            ),
-            dict(
-                id='objects/diagonal,with-bg/rectangulars/irregular:rectangulars',
-                desc='A set of  univalued objects (diagonally connected) described as rectangulars (+ irregulars as rectangulars)',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='objects', diagonal=True, with_bg=True, object_describer='rectangulars/irregular:rectangulars'),
-                code='parse_grid_as_objects(grid, univalued=True, diagonal=True, with_bg=True, hierarchical=True, object_describer="rectangulars/irregular:rectangulars")',
-            ),
-             dict (
-                id='objects/diagonal,without-bg/rectangulars/irregular:raw',
-                desc='A set of uivalued objects (diagonally connected) described as rectangulars',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='objects', diagonal=True, with_bg=False, object_describer='rectangulars/irregular:raw'),
-                code='parse_grid_as_objects(grid, univalued=True, diagonal=True, with_bg=False, bg_color={self.bg_color}, hierarchical=True, object_describer="rectangulars/irregular:raw")',
-
-            ),
-            dict(
-                id='objects/diagonal,without-bg/rectangulars/irregular:rectangulars',
-                desc='A set of  univalued objects (diagonally connected) described as rectangulars (+ irregulars as rectangulars)',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='objects', diagonal=True, with_bg=False, object_describer='rectangulars/irregular:rectangulars'),
-                code='parse_grid_as_objects(grid, univalued=True, diagonal=True, with_bg=False, bg_color={self.bg_color}, hierarchical=True, object_describer="rectangulars/irregular:rectangulars")',
-            ),
-            # dict (
-            #     desc='A set of univalued objects (diagonally connected) described as rectangulars (+ irregulars as vertical lines)',
-            #     func=...
-            # ),
-            # dict(
-            #     desc='A set of univalued objects (diagonally connected) described as rectangulars (+ irregulars as horizontal lines)'
-            # ),
-
-            ## lines
-            dict(
-                id='vlines',
-                desc='A set of vertical lines',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='vlines'),
-                code='parse_grid_as_lines(grid, "vertical")'
-            ),
-            dict(
-                id='hlines',
-                desc='A set of horizontal lines',
-                func=lambda grid: self.grid_to_lens_str_json(grid, parse_type='hlines'),
-                code='parse_grid_as_lines(grid, "horizontal")'
-            )
-        ]
+        
         
         # starting with all-images (no bordrer), looking to features, ...
         self.states['entry_point'] = dict(
             message_to_send=[
                 lambda: 'The following images show examples of a mapping from an input grid to the output grid:',
-                lambda: ('list', self.send_all_pairs(with_descriptors=False)),
+                lambda: ('list', self.send_all_pairs()),
                 lambda: f'''Please examine these images in details. I will then ask you to provide hypotheses about the mapping. For now, please only focus on accurately describing what you see in the images.
 
 Notes:
@@ -147,66 +49,6 @@ Notes:
             ],
             # do_work=self.set_hypothesis_and_get_tools,
             next_state='ask_for_lens'
-        )
-
-# give two hypotheses about the transformations between the input and output grids
-        self.states['ask_for_hypotheses'] = dict(
-            message_to_send=[
-                lambda: f'''Now, taking the thinking fast/slow (System 1 vs 2) paradigm, please ask further questions regarding the details of the transformation you described. Then try to answer them based on the images.
-
-Notes:
-- Notice objects such as points, lines, squares, zones, sections, patches, etc., and their properties (position, color, number, size, border, etc.).
-- After providing your explanation, I will ask you to write code to implement the mapping.'''
-            ],
-            # do_work=self.set_hypothesis_and_get_tools,
-            next_state='ask_for_lens',
-            # next_state='total_failure'
-        )
-
-
-        self.states['ask_for_lens'] = dict(
-            message_to_send=[
-                lambda: f'''Based on your previous response, please select one of the following grid descriptors (abstractions) that helps best understanding the grid this grid.  
-Note that the final goal of this conversation is that you write a Python function that successfully maps the input grids to the output grids. Also, note that this is part of an developer-unaware-intelligence AGI benchmark. This means that developer, that is me, cannot anticipate what descriptor best fits any particular tasks.
-
-Please end your answer with a json object in a code block with the following keys:
-`chosen_descriptor` --> the chosen descriptor's id (value is a string)
-`bg_color` --> if you have chosen a `without-bg` descriptor, you need to specify the background color to exclude (value is one of these str constants "BLACK", "BLUE", "RED", "GREEN", "YELLOW", "GREY", "MAGENTA", "ORANGE", "LIGHT_BLUE", "BROWN")
-`monochromatic_useful` --> do you think it would be useful to run the descriptor on a monochrmoatic version of the grid as well? (value is a Boolean)
-`monochromatic_bg` --> what is the monochromatic background color (if `obj["monochromatic_useful"]=True`). This will be turned into black. All other colors will be turned into yellow (value is one of these str constants "BLACK", "BLUE", "RED", "GREEN", "YELLOW", "GREY", "MAGENTA", "ORANGE", "LIGHT_BLUE", "BROWN")
-`other_useful_descriptors` --> if you think the current descriptors are not enough, you can suggest other descriptors here (value is a string).
-
-Example: if the grid is about rectangles, use rectangulars parse; if the recatangles are attached to bars with the same color, use rectangulars/irregular:rectangulars, because otherwise the whole is reported as an irregular object and the unimodal LLM cannot see the fact. If diaginal connection is important, use oen of the respective parses.
-
-List of descriptors:
-{self.send_descriptors()}
-'''
-            ],
-            do_work=self.select_descriptor,
-            llm=lambda: LLMInterface.TEXT_ADVANCED,
-            next_state='refine_hypothesis',
-            # message_ttl=lambda: [0,0],
-        )
-
-        self.states['refine_hypothesis'] = dict(
-            message_to_send=[
-                lambda: f'''Based on the history of the conversation so far and the result of descriptors provided below, please refine an actionable final hypothesis regarding the mapping between the input and output grids that then I will ask you to implement.
- Please start by asking further questions regarding the details of the transformation you described. That is I want you to act as a System 2 (thinking slow) and figure out the details using descriptor results. Then try to answer them based on all information you have. Then formulate your final hypothesis.
-
-Descriptor results:''',
-#                lambda: f'''The original hypothses regarding the input/output mapping were generated by a good vision model. These models are good as a thinking-fast (i.e., System 1) component and they generally pointing to the right direction.
-# However, for these tasks, both System 1 and System 2 reasoning is needed. System 1 for pointing to a promissing direction (such as, for example, pointing out that input involves extending an alternating pattern), and
-# System 2 for figuring out the details (such as, for example, pointing out that the alternatation is fixed or determined or mirrored by another part of the grid, such as a row above).
-# Another metaphore, is that the vision model gives a glance of the task, while you also need to figure the details out. Therefore, I provided an accurate description of the result of the chosen descriptor. Based on this information,
-# please select, refine, and figure out the details a final hypothesis regarding the mapping between input and output grids.
-# Please make sure your final hypothesis is actionable and not vague (for example "complex object" is a vague notion). Please make sure you've considered all points I mentioned here and all relevant information in the descriptors.''',
-                #lambda: f'''Based on the history of the conversation so far and the result of descriptors provided below, please refine an actionable final hypothesis regarding the mapping between the input and output grids that then I will ask you to implement.''',
-                lambda: ('list', self.send_all_pairs(with_descriptors=True)),
-            ],
-            do_work=self.select_descriptor,
-            llm=lambda: LLMInterface.TEXT_ADVANCED,
-            next_state='ask_for_code',
-            # message_ttl=lambda: [0,0],
         )
 
         self.states['ask_for_code'] = dict(
@@ -314,7 +156,7 @@ Good luck!
         results = extract_and_run_mapping_code(response, self.task_id, self.dataset, tools_code=tools_codes)
         self.run_results.append(results)
 
-    def send_all_pairs(self, with_descriptors: bool):
+    def send_all_pairs(self):
         results = []
         pair_indices = self.which_pairs
         if self.which_pairs == 'all':
@@ -326,21 +168,16 @@ Good luck!
                 grid = self.task['train'][pair_index]['input']
                 results.append(('image', single_grid_to_base64(grid,
                     draw_edges=False, draw_spine_border=True)))
-                if with_descriptors:
-                    results.append(('text', f'`{self.default_input_grid_lens_code}={self.default_input_grid_lens(grid)}`'))
                 
                 grid = self.task['train'][pair_index]['output']
                 results.append(('image', single_grid_to_base64(grid,
                     draw_edges=False, draw_spine_border=True)))
-                if with_descriptors:
-                    results.append(('text', f'`{self.default_input_grid_lens_code}={self.default_input_grid_lens(grid)}`'))
+                
         else:
             all_in_one_arg = [self.task['train'][i] for i in pair_indices]
             results.append('image',
                     grids_all_in_one_to_base64(all_in_one_arg, draw_edges=False, draw_spine_border=True))
         return results
-    
-
     
     def is_last_run_success(self):
         return (
@@ -367,39 +204,10 @@ Good luck!
                 results.append(('text', obj['text']))
             elif 'grid' in obj:
                 grid = obj['grid']
-                # these are pruned later, because the llm is text-advanced
+                # these might be pruned later, because the llm is text-advanced
                 results.append(('image', single_grid_to_base64(grid, draw_edges=False, draw_spine_border=True)))
-                if self.default_input_grid_lens is not None: # TODO: change grid to grid-input, etc and use self.default_paired_grid_lens
-                    results.append(('text', f'`{self.default_input_grid_lens_code}={self.default_input_grid_lens(grid)}`'))
-                    if self.monochromatic_useful and self.monochromatic_bg:                        
-                        results.append(('text', f'mono chromatic version of this image where {color_to_str(self.monochromatic_bg)} is replaced with black and all other colors to yellow:'))
-                        mc_grid = make_grid_monochrome(grid, color_to_bg=self.monochromatic_bg)
-                        # these are pruned later, because the llm is text-advanced
-                        results.append(('image', single_grid_to_base64(mc_grid, draw_edges=False, draw_spine_border=True)))
-                        results.append(('text', f'`{self.default_input_grid_lens_code}={self.default_input_grid_lens(mc_grid)}`'))
                 
-        # if any_grid_description_added:
-        #     results.append(('text', f'\n\nNote: Grid descriptions created using `{self.default_input_grid_lens_code}`.'))
-        
         return results
-
-    def send_grid_(self, grid, with_descriptors: bool) -> tuple[bool, list[tuple[str,str]]]:
-        # print(f'send_grid_: {with_descriptors=}')
-        any_grid_description_added = False
-        results = []
-        results.append(('image', single_grid_to_base64(grid, draw_edges=False, draw_spine_border=True)))
-        if with_descriptors and self.default_input_grid_lens is not None: # TODO: change grid to grid-input, etc and use self.default_paired_grid_lens
-            any_grid_description_added = True
-            results.append(('text', f'`{self.default_input_grid_lens_code}={self.default_input_grid_lens(grid)}`'))
-            # print(f'send_grid_: {with_descriptors=} (added desc)')
-            if self.monochromatic_useful and self.monochromatic_bg:                        
-                results.append(('text', f'mono chromatic version of this image where {color_to_str(self.monochromatic_bg)} is replaced with black and all other colors to yellow:'))
-                mc_grid = make_grid_monochrome(grid, color_to_bg=self.monochromatic_bg)
-                results.append(('image', single_grid_to_base64(mc_grid, draw_edges=False, draw_spine_border=True)))
-                results.append(('text', f'`{self.default_input_grid_lens_code}={self.default_input_grid_lens(mc_grid)}`'))
-        
-        return any_grid_description_added, results
-    
     
     def set_hypothesis_and_get_tools(self, response):        
         self.hypothesis = response
@@ -417,57 +225,4 @@ Good luck!
     # def send_tools_docs(self):
     #     return generate_tools_docs_by_ast(Path(current_file_dir / 'tools_src_mini.py'), tool_type='all')
 
-    def grid_to_lens_str_human_readable(self, grid, parse_type: str, diagonal: bool=None, with_bg: bool=None, object_describer: str=None):
-        assert parse_type in ['objects', 'vlines', 'hlines']
-        if parse_type == 'objects':
-            objs = parse_grid_as_objects(grid, univalued=True, diagonal=diagonal, with_bg=with_bg, bg_color=self.bg_color, hierarchical=True, object_describer=object_describer)
-            descs_str = parsed_things_to_str(objs)
-        else: # vlines, hlines
-            # FIXME: description
-            lines = parse_grid_as_lines(grid, direction='vertical' if parse_type == 'vlines' else 'horizontal')
-            descs_str = parsed_things_to_str(lines)
-        
-        return descs_str
     
-    def grid_to_lens_str_json(self, grid, parse_type: str, diagonal: bool=None, with_bg: bool=None, object_describer: str=None):
-        assert parse_type in ['objects', 'vlines', 'hlines']
-        if parse_type == 'objects':
-            objs = parse_grid_as_objects(grid, univalued=True, diagonal=diagonal, with_bg=with_bg, bg_color=self.bg_color, hierarchical=True, object_describer=object_describer)
-            descs_str = parsed_things_to_str_json(objs)
-        else: # vlines, hlines
-            lines = parse_grid_as_lines(grid, direction='vertical' if parse_type == 'vlines' else 'horizontal')
-            descs_str = parsed_things_to_str_json(lines)
-        
-        return descs_str
-        
-    def select_descriptor(self, response):
-        code_blocks = re.findall(r'```(?:json|js|javascript)?\n(.*?)```', response, re.DOTALL)
-        for code_block in reversed(code_blocks):
-            try:
-                obj = json.loads(code_block)
-                if 'chosen_descriptor' not in obj:
-                    continue
-                chosen_descriptor_id = obj['chosen_descriptor']
-                desc_dict = next((desc_dict for desc_dict in self.descriptors if desc_dict['id'] == chosen_descriptor_id), None)
-                if desc_dict:
-                    self.default_input_grid_lens = self.default_output_grid_lens = desc_dict['func']
-                    self.default_input_grid_lens_code = self.default_output_grid_lens_code = desc_dict['code'].replace('{self.bg_color}', color_to_str(self.bg_color).upper())
-
-                self.monochromatic_useful = obj.get('monochromatic_useful', None)
-                monochromatic_bg = obj.get('monochromatic_bg', None)
-                if monochromatic_bg:
-                    self.monochromatic_bg = str_to_color(monochromatic_bg.lower())
-                other_useful_descriptors = obj.get('other_useful_descriptors', None)
-                if other_useful_descriptors:
-                    print(f'Useful descriptor for task {self.task_id}: {other_useful_descriptors}')
-                return
-            except:
-                pass
-
-    def send_descriptors(self) -> str:
-        results = []
-        for descriptor in self.descriptors:
-            result = f'''- `{descriptor['id']}`: {descriptor['desc']}'''
-            results.append(result)
-
-        return '\n'.join(results)
