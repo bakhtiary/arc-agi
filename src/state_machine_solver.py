@@ -25,7 +25,9 @@ class StateMachineSolver:
         add_string_to_log(f'''# Task summary
 Task id: {task_id}
 Dataset: {dataset.string_encode()}
-LLMInterface: {self.llm_interface.get_llms_mapping()}\n\n''', log_file)
+LLMInterface: {self.llm_interface.get_llms_mapping()}
+StateMachine: {self.state_machine_class.__name__}
+\n\n''', log_file)
         print(f'Solving {task_id}: http://127.0.0.1:5000/#{log_dir.parent.name}/{log_dir.name}/{task_id}/{log_file.name}')
         
         cur_state_machine = self.state_machine_class(task_id, dataset)
@@ -70,6 +72,7 @@ LLMInterface: {self.llm_interface.get_llms_mapping()}\n\n''', log_file)
 
             if 'message_to_send' in cur_state:
                 if 'message_ttl' in cur_state:
+                    # TODO: include ttl in log
                     one_before_last_ttl, last_ttl = cur_state['message_ttl']()
                     if any_message_sent:
                         history_manager.set_ttl_last_pair(one_before_last_ttl, last_ttl)

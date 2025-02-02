@@ -1,7 +1,9 @@
 ## flood fill, connect lines, describe shapes (with discribe inside, but about unconnected shapes with an "invisible" tie, or
 # black squares on a large yellow rectangle)
 from collections import defaultdict
+import copy
 import functools
+import json
 from typing import Literal
 
 import numpy as np
@@ -42,6 +44,7 @@ color_to_str_dict_ = {
     BROWN: "brown"
 }
 
+
 ############################
 # utils
 def obj_func_cacher(func):
@@ -74,16 +77,39 @@ def dict_to_str(d: dict) -> str:
 
     return '(' + ", ".join(kvs) + ')'
 
-def parsed_to_nested_str(d: dict, obj_key: bool=False, indent=0) -> str:
+def parsed_things_to_str(parses_things: list[dict], include_obj_key: bool=False) -> str:
+    return '\n'.join(parsed_single_thing_to_str(pt, include_obj_key=include_obj_key) for pt in parses_things)
+
+def parsed_things_to_str_json(parses_things: list[dict], include_obj_key: bool=False) -> str:
+    return '[' + ',\n'.join(parsed_single_thing_to_str_json(pt, include_obj_key=include_obj_key) for pt in parses_things) + ']'
+
+def parsed_single_thing_to_str_json(parsed_thing: dict, include_obj_key: bool=False) -> str:
+    pt = copy.deepcopy(parsed_thing)
+    
+    def remove_obj_rec(obj: dict):
+        assert 'obj' in obj
+        obj.pop('obj')
+        obj['obj'] = "Ellipsis"
+        if 'children' in obj:
+            obj['children'] = obj.pop('children')
+            for child in obj['children']:
+                remove_obj_rec(child)
+    
+    if not include_obj_key:
+        remove_obj_rec(pt)
+    
+    return json.dumps(pt).replace('"Ellipsis"', '...')
+
+def parsed_single_thing_to_str(parsed_thing: dict, include_obj_key: bool=False, indent=0) -> str:
     result = ''
     children = []
-    if 'children' in d:
-        children = d['children']
-        del d['children']
-    d = {k: v for k,v in d.items() if (obj_key or k != 'obj')}
-    result += ' ' * 8 * indent + dict_to_str(d)
+    if 'children' in parsed_thing:
+        children = parsed_thing['children']
+        del parsed_thing['children']
+    parsed_thing = {k: v for k,v in parsed_thing.items() if (include_obj_key or k != 'obj')}
+    result += ' ' * 8 * indent + dict_to_str(parsed_thing)
     for child in children:
-        result += '\n' + parsed_to_nested_str(child, obj_key, indent+1)        
+        result += '\n' + parsed_single_thing_to_str(child, include_obj_key=include_obj_key, indent=indent+1)        
     return result
 
 ############################
@@ -130,11 +156,14 @@ def get_obj_colors(obj: Object) -> set[int]:
     colors = [color for _, color in obj]
     return set(colors)
 
-@llm_tool #?
-def obj_to_univalued(obj: Object, uni_color=0):
-   if isinstance(obj, dict):
-        obj = obj['obj']
-   return [(pos, uni_color) for pos, _ in obj]
+# @llm_tool #?
+# def obj_to_univalued(obj: Object, uni_color=0):
+#    if isinstance(obj, dict):
+#         obj = obj['obj']
+#    return [(pos, uni_color) for pos, _ in obj]
+
+def make_grid_monochrome(grid: Grid, color_to_bg: int, bg: int=BLACK, fg: int=YELLOW):
+    return [[bg if cell == color_to_bg else fg for cell in row] for row in grid]
 
 @llm_tool #?
 def get_subobject(obj: Object, positions: dict):
@@ -218,7 +247,7 @@ def get_grid_and_visited_for_hole_functions_(obj: Object):
 def parse_grid_as_objects(grid: Grid,
     univalued: bool, diagonal: bool, with_bg: bool=True, bg_color: int=None,
     hierarchical: bool=True,
-    object_describer: Literal['raw','rectangular/irregular:raw','rectangular/irregular:rectangles','rectangular/irregular:vlines', 'rectangular/irregular:hlines', 'vlines', 'hlines']='raw'
+    object_describer: Literal['raw','rectangulars/irregular:raw','rectangulars/irregular:rectangulars','rectangulars/irregular:vlines', 'rectangulars/irregular:hlines', 'vlines', 'hlines']='raw'
 ) -> list[dict]:
     """ Extract connected objects from a grid.
 
@@ -233,7 +262,7 @@ def parse_grid_as_objects(grid: Grid,
         bg_color (int): Specifies the background color in the grid to be used with `with_bg`=False.
         hierarchical (bool): If True, an object that encloses other objects will have a `children` key that lists the objects.
         object_describer (str): If `raw`, each object is retuend as a dictionary with `obj` key and object points as a list[tuple[tuple[int,int],int]] as the list of ((y,x),color) tuples with no further description.
-                            If `rectangular/irregular:X`, try to parse each object as a single rectangular object; For each object, besides `obj`, there is a `shape` key that can be `point`, `line` (for horizontal or vertical lines), `rectangle` (for solid or hollow straight rectangles), or `irregular` (all other objects, such as titlted lines, polylines, triangles, L-shapes, circles, and even rectangles with an attached protrusion, etc). Each shape has additional relevant keys as given in the examples below.
+                            If `rectangulars/irregular:X`, try to parse each object as a single rectangular object; For each object, besides `obj`, there is a `shape` key that can be `point`, `line` (for horizontal or vertical lines), `rectangle` (for solid or hollow straight rectangles), or `irregular` (all other objects, such as titlted lines, polylines, triangles, L-shapes, circles, and even rectangles with an attached protrusion, etc). Each shape has additional relevant keys as given in the examples below.
                             X is not `raw` is used to parse an irregular shape further, as a set of rectangular objects (starting from the largest ones), vertical, or horlizontal objects in `as-X` key.
                             If  `vlines` or `hilnes`, parses each object as a set of vertical or horizontal lines.
     Returns:
@@ -259,7 +288,7 @@ def parse_grid_as_objects(grid: Grid,
         If a rectangle or irregular shape is solid, `has_hole` will be `False` and no `thickness` (for rectangles) is present.
         If the object is not univalued, instead of the `color` key, there will be a `colors` key with comma-seperated list of unique colors in the shape.
     """
-    assert object_describer in ['raw','rectangular/irregular:raw','rectangular/irregular:rectangles','rectangular/irregular:vlines', 'rectangular/irregular:hlines', 'vlines', 'hlines']
+    assert object_describer in ['raw','rectangulars/irregular:raw','rectangulars/irregular:rectangulars','rectangulars/irregular:vlines', 'rectangulars/irregular:hlines', 'vlines', 'hlines']
 
     if not hierarchical:
         objs = parse_grid_as_objects_raw_flat(grid, univalued, diagonal, with_bg, bg_color)
@@ -270,15 +299,22 @@ def parse_grid_as_objects(grid: Grid,
     def add_description_to_obj_(obj: dict):
         if object_describer == 'raw':
             obj['size'] = len(obj['obj'])
-            obj.update(get_color_dict(obj['obj']))
-            return obj
-        if object_describer in ['rectangular/irregular:raw','rectangular/irregular:rectangles','rectangular/irregular:vlines', 'rectangular/irregular:hlines']:
-            irregular_method = object_describer.removeprefix('rectangular/irregular:')
+            obj.update(get_obj_colors_(obj['obj']))
+        elif object_describer in ['rectangulars/irregular:raw','rectangulars/irregular:rectangulars','rectangulars/irregular:vlines', 'rectangulars/irregular:hlines']:
+            irregular_method = object_describer.removeprefix('rectangulars/irregular:')
             result = describe_single_object_as_one_or_more_rectangulars(obj['obj'], irregular_method=irregular_method)
             obj.update(result)
         elif object_describer in ['vlines', 'hlines']:
             result = describe_single_object_as_one_or_more_lines(obj['obj'], direction='vertical' if object_describer=='vlines' else 'horizontal')
-            obj[f'as_{object_describer}'] = result
+            obj['size'] = len(obj['obj'])
+            obj.update(get_obj_colors_(obj['obj']))
+            obj[f'as_{object_describer}'] = result # for rectangulras 'as_...' is not used, because the results of 
+                                                # `describe_single_object_as_one_or_more_rectangulars`` is only 
+                                                # one dictionary with a `shape` key which can be irregular with 
+                                                # its own `as_vlines`/`as_hlines` but here we don't look object as
+                                                # rectangulars at all. Even rectangulars are parsed as vlines/hlines.
+                                                # In `parse_grid_as_lines`, we even don't identify objects, but parse
+                                                # the grid as a set of vlines/hlines.        
         children = []
         if 'children' in obj:
             for child_obj in obj['children']:
@@ -289,6 +325,8 @@ def parse_grid_as_objects(grid: Grid,
     for obj in objs:
         add_description_to_obj_(obj)
     
+    objs.sort(key=lambda obj: bounding_box_(obj)[0])
+
     return objs
 
 
@@ -384,7 +422,7 @@ def describe_single_rectangular(rect: dict) -> dict:
         if rect['thickness'] != 0:
             result['thickness'] = rect['thickness']
     
-    result.update(get_color_dict(obj)) 
+    result.update(get_obj_colors_(obj)) 
     if result['shape'] not in ['point', 'line']:
         result['has_hole'] = has_hole(obj) # add has_hole at the end, to be consistent with elsewhere
     return result
@@ -394,7 +432,7 @@ def describe_single_irregular(obj: Object, rectangles: list[dict], irregular_met
     # if isinstance(obj, dict):
     #     obj = obj['obj']
     result = dict(shape='irregular', size=len(obj), bounding_box=bounding_box_(obj))
-    result.update(get_color_dict(obj))
+    result.update(get_obj_colors_(obj))
     result['has_hole'] = has_hole(obj) # add has_hole at the end, to be consistent with elsewhere
     if irregular_method == 'raw':
         pass
@@ -406,7 +444,16 @@ def describe_single_irregular(obj: Object, rectangles: list[dict], irregular_met
         result[f'as_{irregular_method}'] = describe_single_object_as_one_or_more_lines(obj, direction='vertical' if irregular_method=='vlines' else 'horizontal')
     return result
 
-def get_color_dict(obj: Object) -> dict:
+def color_to_str(color_i: int) -> str:
+    return color_to_str_dict_[color_i]
+
+def str_to_color(a_color_str: str) -> int:
+    for color_i, color_str in color_to_str_dict_.items():
+        if color_str == a_color_str:
+            return color_i
+
+
+def get_obj_colors_(obj: Object) -> dict[Literal['color','colors'],str]:
     if isinstance(obj, dict):
         obj = obj['obj']
     obj_colors = [col for _, col in obj]
@@ -414,6 +461,70 @@ def get_color_dict(obj: Object) -> dict:
     colors_str = ','.join(colors)
     color_key = 'color' if len(colors) == 1 else 'colors'
     return {color_key: colors_str}
+
+def get_obj_colors_detailed(obj: Object) -> dict[Literal['color','colors'],str]:
+    if isinstance(obj, dict):
+        obj = obj['obj']
+    result = get_linear_traversal_color_bunches(obj)
+
+    colors_str = ', '.join(f'{color_to_str(color)} (len={size})' for color, size in result)
+    color_key = 'color' if len(result) == 1 else 'colors'
+    return {color_key: colors_str}
+
+def get_linear_traversal_color_bunches(obj: Object):
+    ordered_indices = order_obj_by_linear_traversal_(obj)
+    
+    result = []
+    prev_color = None
+    count = 0
+
+    for index in ordered_indices:
+        _, color = obj[index]
+        if color == prev_color:
+            count += 1
+        else:
+            if prev_color is not None:
+                result.append((prev_color, count))
+            prev_color = color
+            count = 1
+
+    if prev_color is not None:
+        result.append((prev_color, count))
+    
+    return result
+
+def order_obj_by_linear_traversal_(obj: Object) -> list[int]:
+    adjacency = defaultdict(list)
+    tl_point = bounding_box_(obj)[0]
+    point_indices = {(y, x): idx for idx, ((y, x), _) in enumerate(obj)}
+    for idx, ((y, x), _) in enumerate(obj):
+        neighbors = [(y+dy, x+dx) for dy in [0, -1, 1] for dx in [1, 0, -1]
+                    if not (dx == 0 and dy == 0) ]  # Adjust based on adjacency rules
+        # neighbors = [(y+dy, x+dx) for dx,dy in [(1,)]
+        for ny, nx in neighbors:
+            if (ny, nx) in point_indices:
+                neighbor_idx = point_indices[(ny, nx)]
+                adjacency[idx].append(neighbor_idx)
+    endpoints = [idx for idx, neighbors in adjacency.items() if len(neighbors) == 1]
+    endpoints.sort(key=lambda index: obj[index])
+    if not endpoints: # loops
+        start_index = point_indices[tl_point]
+    else:
+        start_index = endpoints[0]
+
+    visited = set()
+    ordered_indices = []
+
+    def dfs(current_idx):
+        visited.add(current_idx)
+        ordered_indices.append(current_idx)
+        for neighbor_index in adjacency[current_idx]:
+            if neighbor_index not in visited:
+                dfs(neighbor_index)
+
+    dfs(start_index)
+    return ordered_indices
+
 
 def describe_single_object_as_one_or_more_rectangulars(obj: Object, irregular_method: Literal['raw','rectangles','vlines', 'hlines']='raw') -> dict:
     """ one or more rectangluars are saved in an irregular object's `as_X` key where X is `irregular_method` """
@@ -436,7 +547,7 @@ def describe_single_object_as_one_or_more_rectangulars(obj: Object, irregular_me
     
     if not obj:
         raise ValueError('Cannot describe empty object.')
-    assert irregular_method in ['raw', 'rectangles', 'vlines', 'hlines']
+    assert irregular_method in ['raw', 'rectangulars', 'vlines', 'hlines']
     
     obj_positions = [pos for pos, _ in obj]
     rectangles = describe_single_object_as_one_or_more_rectangulars_(obj)
@@ -533,14 +644,38 @@ def parse_grid_as_lines(grid: Grid, direction: str, bg_color: int=0) -> list[dic
     #     return [((y,x),grid[y][x]) for y in range(len(grid)) for x in range(len(grid[0]))]
 
     H, W = len(grid), len(grid[0])
-    if direction == 'horizontal':        
-        lines = [{'obj': [((y,x),grid[y][x]) for x in range(W) if grid[y][x] != bg_color]} for y in range(H)]
-    else:
-        lines = [{'obj': [((y,x),grid[y][x]) for y in range(H) if grid[y][x] != bg_color]} for x in range(W)]
+    lines = []
+    if direction == 'horizontal':
+        for y in range(H):
+            line = []
+            for x in range(W):
+                color = grid[y][x]
+                if color != bg_color:
+                    line.append(((y,x), color))
+                else:
+                    lines.append(line)
+                    line = []
 
+            if line:
+                lines.append(line)
+    else:
+        for x in range(W):
+            line = []
+            for y in range(H):
+                color = grid[y][x]
+                if color != bg_color:
+                    line.append(((y,x), color))
+                else:
+                    lines.append(line)
+                    line = []
+
+            if line:
+                lines.append(line)
+
+    lines = [{'obj': line} for line in lines]
     results = []
     for line in lines:
-        if line:
+        if line and line['obj']:
             line.update(describe_single_line(line['obj']))
             results.append(line)
     return results
@@ -578,11 +713,11 @@ def describe_single_line(obj: Object) -> dict:
     if (w,h) == (1,1):            
         result = dict(shape='point', position=first_pos)
     elif w == 1:
-        result = dict(shape='line', direction='vertical', x=first_pos[0], start_y=min_y, end_y=max_y, length=len(obj))
+        result = dict(shape='line', direction='vertical', x=first_pos[1], start_y=min_y, end_y=max_y, length=len(obj))
     elif h == 1:
-        result = dict(shape='line', direction='horizontal', y=first_pos[1], start_x=min_x, end_x=max_x, length=len(obj))
+        result = dict(shape='line', direction='horizontal', y=first_pos[0], start_x=min_x, end_x=max_x, length=len(obj))
 
-    result.update(get_color_dict(obj))
+    result.update(get_obj_colors_detailed(obj))
     return result
 
 # def get_object_as_lines_topological(obj: Object, direction: str) -> list[dict]:

@@ -14,7 +14,7 @@ from code_utils import keep_only_defs_and_imports
 from dataset import LocalDataset
 from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from state_machine_solver_utils import run_task_code_read_outputs_with_timeout
-from tools_src_mini import parse_grid_as_objects, parsed_to_nested_str
+from tools_src_mini import parse_grid_as_objects, parsed_single_thing_to_str
 # from lens_orthogonal import describe_objects_as_rectangulars_flat, describe_objects_as_rectangulars_hierarchy
 
 current_file_dir = Path(__file__).parent
@@ -314,18 +314,18 @@ def grid_to_lens_html(grid):
     objs3 = parse_grid_as_objects(grid, univalued=False, diagonal=True, with_bg=False, bg_color=0)
     objs4 = parse_grid_as_objects(grid, univalued=False, diagonal=False, with_bg=False, bg_color=0)
 
-    desc1 = parsed_to_nested_str(objs1, univalued=True)
-    desc2 = parsed_to_nested_str(objs2, univalued=True)
-    desc3 = parsed_to_nested_str(objs3, univalued=False)
-    desc4 = parsed_to_nested_str(objs4, univalued=False)
+    desc1 = parsed_single_thing_to_str(objs1, univalued=True)
+    desc2 = parsed_single_thing_to_str(objs2, univalued=True)
+    desc3 = parsed_single_thing_to_str(objs3, univalued=False)
+    desc4 = parsed_single_thing_to_str(objs4, univalued=False)
 
-    desc1 = parsed_to_nested_str(desc1)
-    desc2 = parsed_to_nested_str(desc2)
-    desc3 = parsed_to_nested_str(desc3)
-    desc4 = parsed_to_nested_str(desc4)
+    desc1 = parsed_single_thing_to_str(desc1)
+    desc2 = parsed_single_thing_to_str(desc2)
+    desc3 = parsed_single_thing_to_str(desc3)
+    desc4 = parsed_single_thing_to_str(desc4)
 
-    objs5 = parse_grid_as_objects(grid, univalued=True, diagonal=True, with_bg=False, bg_color=0, hierarchical=True, object_describer='rectangular/irregular:raw')
-    desc5 = parsed_to_nested_str(objs5, univalued=True)
+    objs5 = parse_grid_as_objects(grid, univalued=True, diagonal=True, with_bg=False, bg_color=0, hierarchical=True, object_describer='rectangulars/irregular:raw')
+    desc5 = parsed_single_thing_to_str(objs5, univalued=True)
     # def _remove_pos(an_obj):
     #     # an_obj['size'] = len(an_obj['positions'])
     #     # del an_obj['positions']

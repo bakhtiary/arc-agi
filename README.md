@@ -29,6 +29,50 @@
     - [ ] ask LLMs to write python code to see the picture better (measure distance, etc)
 
 
+# Classes Documentation
+``` sh
+(.venv) ~/arc-all/arc-agi/src$ ls -lt simple_state_machine_* 
+-rw-r--r-- 1 me me 30784 Nov 30 11:07 simple_state_machine_with_tools_and_larc.py
+
+-rw-r--r-- 1 me me 30409 Nov 30 10:58 simple_state_machine_with_tools_and_lens_4.py
+# workflow: entry_point --> ask_for_lens (list of descriptors *without* examples)
+#             --> refine_hypothesis
+#             --> ask_for_code (`solve`, hardcoded tools, chosen lens)
+
+-rw-r--r-- 1 me me 24798 Nov 29 15:41 simple_state_machine_with_tools_and_lens_3.py
+# workflow: entry_point --> ask_for_lens (list of descriptors and examples)
+#     --> ask_for_code (`solve`, hardcoded tools docs)
+
+
+-rw-r--r-- 1 me me 13534 Nov 29 15:40 simple_state_machine_with_tools_and_lens_2.py
+# workflow: entry_point --> ask_for_code (either `solve` or `lens_main`, hardcoded tools docs)
+# previous version: simple_state_machine_distinct_pairs_with_tools_and_lens_1.py
+
+-rw-r--r-- 1 me me 11440 Nov 29 15:40 simple_state_machine_distinct_pairs_with_tools_and_lens_1.py
+# no all_in_one
+#     workflow: entry_point --> refine_hypothesis_with_lens (with hardcoded lens)
+#     --> ask_for_code (automatic docs of all tools)
+# next version: simple_state_machine_with_tools_and_lens_2.py
+
+-rw-r--r-- 1 me me  7447 Nov 18 12:36 simple_state_machine_distinct_pairs_with_tools.py
+# no all_in_one
+
+-rw-r--r-- 1 me me  9800 Nov 15 12:04 simple_state_machine_with_o1.py
+# is all_in_one
+
+-rw-r--r-- 1 me me  7640 Nov 14 20:46 simple_state_machine_distinct_pairs_with_tools_hypodb.py
+-rw-r--r-- 1 me me  9382 Nov 12 17:13 simple_state_machine_distinct_pairs_with_tools_manual_hypothesis.py
+
+-rw-r--r-- 1 me me  4550 Nov 12 16:23 simple_state_machine_all_in_one.py
+    # Starting from simple_state_machine_with_tools_and_lens_2,
+    # all_in_one, distinct_pairs, and single_pair are all combined as a parameter `which_pairs' 
+
+-rw-r--r-- 1 me me  5183 Nov  8 23:25 simple_state_machine_distinct_pairs.py
+-rw-r--r-- 1 me me  2278 Nov  8 11:41 simple_state_machine_one_state.py
+-rw-r--r-- 1 me me  4662 Nov  8 11:41 simple_state_machine_single_pair.py # earliest version
+-rw-r--r-- 1 me me  8864 Nov  8 11:41 simple_state_machine_with_restart.py
+```
+
 # Abstraction and Reasoning Corpus for Artificial General Intelligence (ARC-AGI)
 
 This repository contains the ARC-AGI task data, as well as a browser-based interface for humans to try their hand at solving the tasks manually.

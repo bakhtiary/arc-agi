@@ -6,11 +6,16 @@ from grid_utils import get_grid_sizes, AKGrid
 from image_utils import grids_all_in_one_to_base64, single_grid_to_base64
 from llm_utils import LLMInterface
 from state_machine_solver_utils import extract_and_run_mapping_code_with_lens
-from tools_src_mini import parse_grid_as_objects, parsed_to_nested_str
+from tools_src_mini import parse_grid_as_objects, parsed_single_thing_to_str
 
 current_file_dir = Path(__file__).parent
 
+
 class SimpleStateMachineWithToolsAndLens2:
+    """
+        workflow: entry_point --> ask_for_code (either `solve` or `lens_main`, hardcoded tools docs)
+        previous version: simple_state_machine_distinct_pairs_with_tools_and_lens_1.py
+    """
     def __init__(self, task_id, dataset: Dataset, distinct_pairs=True, which_pairs: str|list[int]='all'):
         self.start_state = 'entry_point'
         self.phase = 'all_in_one'
@@ -87,7 +92,7 @@ In each turn you write a code, containing one or more of the following:
 You can write for example codes that extract and print useful information from the grid that help you solve the problem.
 
 I have already written a basic set of lens and action tools that you might find useful:
-- `parse_grid_as_objects (grid: Grid, univalued: bool, diagonal: bool, with_bg: bool=True, bg_color: int=None, hierarchical: bool=True, object_describer: Literal['raw','rectangular/irregular:raw','rectangular/irregular:rectangles']='raw') -> list[dict]`.
+- `parse_grid_as_objects (grid: Grid, univalued: bool, diagonal: bool, with_bg: bool=True, bg_color: int=None, hierarchical: bool=True, object_describer: Literal['raw','rectangulars/irregular:raw','rectangulars/irregular:rectangulars']='raw') -> list[dict]`.
 Depending on the arguments, the function returns a list of objects, i.e., a set of either univalued or multi-valued-non-background, othogonally or diagonally connected components on the grid.
 Depending on `hierarchical`, the list is either a flat list of all objects or hierarchical list where each items is a dict with a `children` key. Either way, an object contain an `obj` key with `list[tuple[tuple[int,int],int]]` as the values.
 The argument `object_describer` determines furthur parsing of the object. Currenlt, only straight rectangular parsing is available, where an object can be point, a horizontal or vertical line, or a straight rectangle. All other shapes (including tilted lines, triangles, color patterns, L-shapes, rectangles with projections, rotated rectangles, etc) are reported as `irregular`.
@@ -225,7 +230,7 @@ Good luck!
     #     return generate_tools_docs_by_ast(Path(current_file_dir / 'tools_src_mini.py'), tool_type='all')
 
     def grid_to_lens_str(self, grid, diagonal: bool):
-        objs = parse_grid_as_objects(grid, univalued=True, diagonal=diagonal, with_bg=True, hierarchical=True, object_describer='rectangular/irregular:raw')
-        descs_str = '\n'.join(parsed_to_nested_str(obj) for obj in objs)
+        objs = parse_grid_as_objects(grid, univalued=True, diagonal=diagonal, with_bg=True, hierarchical=True, object_describer='rectangulars/irregular:raw')
+        descs_str = '\n'.join(parsed_single_thing_to_str(obj) for obj in objs)
         return descs_str
         

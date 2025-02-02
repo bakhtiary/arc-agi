@@ -34,7 +34,10 @@ def message_to_md(message, prune_images, llm=None):
     md = ''
     role, content = message['role'], message['content']
     md += f'----\n\n'
-    md += f'# {role} ({llm}):\n\n'
+    if llm:
+        md += f'# {role} ({llm}):\n\n'
+    else:
+        md += f'# {role}:\n\n'
     if isinstance(content, str):
         md += f'{content}\n'
     else:
