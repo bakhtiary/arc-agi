@@ -155,9 +155,9 @@ class HistoryManager:
                 self.log_file)
 
 
-def chat_with_llm(llm_intreface: LLMInterface, histoy_manager: HistoryManager,
+def chat_with_llm(llm_intreface: LLMInterface, history_manager: HistoryManager,
     llm_tag: str, resp_format=None, cur_tst=None):
         assistant_reply = llm_intreface.chat_with_llm(
-            histoy_manager.get_messages(cur_tst=cur_tst), llm_tag, resp_format)
-        histoy_manager.log_reply(assistant_reply)
+            history_manager.get_messages(cur_tst=cur_tst), llm_tag, resp_format)
+        history_manager.add_singletone_text_message('assistant', assistant_reply, llm_tag, tst=cur_tst)
         return assistant_reply

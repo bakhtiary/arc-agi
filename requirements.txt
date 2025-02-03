@@ -13,3 +13,4 @@ pillow
 torch
 transformers
 accelerate
+pandas

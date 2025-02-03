@@ -30,7 +30,7 @@ class LocalDataset(Dataset):
         return f'LOCAL_DATASET:{self.DATA_DIR}:{self.dataset_location}'
     
     def get_all_task_ids(self):
-        return list(p.stem for p in (self.DATA_DIR / self.dataset_location).iterdir())
+        return sorted(list(p.stem for p in (self.DATA_DIR / self.dataset_location).iterdir()))
 
 class KaggleDataset(Dataset):
     def __init__(self, dataset_location, _DATA_DIR):

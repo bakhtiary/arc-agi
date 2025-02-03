@@ -2,7 +2,8 @@ import json
 import os
 from pathlib import Path
 import time
-from multiprocessing import Pool
+import multiprocessing as mp
+import multiprocessing.pool
 import traceback
 
 from dataset import Dataset
@@ -12,6 +13,27 @@ from task_utils import calc_score
 list_of_results = []
 
 
+
+import multiprocessing
+import multiprocessing.pool
+
+class NoDaemonProcess(multiprocessing.Process):
+    # make 'daemon' attribute always return False
+    @property
+    def daemon(self):
+        return False
+
+    @daemon.setter
+    def daemon(self, val):
+        pass
+
+
+class NonDaemonPool(multiprocessing.pool.Pool):
+    def Process(self, *args, **kwds):
+        proc = super(NonDaemonPool, self).Process(*args, **kwds)
+        proc.__class__ = NoDaemonProcess
+        return proc
+    
 def solver_wrapper(args):
     solver, task_id, dataset, log_dir = args
     (log_dir / task_id).mkdir(parents=True, exist_ok=True)
@@ -29,31 +51,33 @@ def solver_wrapper(args):
 
 # Async model is cooporative multitasking with no preemption
 def _task_done(result):
-    task_id, dataset, log_file, solutions = result
+    task_id, dataset, log_file, solution = result
     results_json_file = log_file.parent.parent / 'results.json'
-    termination_reason = 'timeout' if solutions is None else 'success'
-    score = calc_score(task_id, dataset, solutions, detailed=False)
+    termination_reason = 'timeout' if solution is None else 'success'
+    score = calc_score(task_id, dataset, solution, detailed=False)
 
-    add_string_to_log(f"# Termination information\n## Reason\n{termination_reason}\n## Solutions\n{solutions}\n", log_file)
+    add_string_to_log(f"# Termination information\n## Reason\n{termination_reason}\n## Solution\n{solution}\n", log_file)
     add_string_to_log(f"## Score\nscore is {score}\n", log_file)
     print(f"Task done: {dataset=} {task_id=}, {score=}")
     add_item_to_experiment_log(task_id, dataset, termination_reason, score, results_json_file)
-    list_of_results.append((task_id, dataset, log_file, solutions, termination_reason, score))
+    list_of_results.append((task_id, dataset, log_file, solution, termination_reason, score))
 
 
-def _task_error(raised_exception):
-    try:
-        print(f'(Early exception print) {raised_exception}')
+def _task_error(e):
+    try:        
+        print(f'(Early exception print) {e}')
+        print(traceback.format_exception(e))    
         # assert hasattr(raised_exception, 'ak_data')
-        d = raised_exception.ak_data
+        d = e.ak_data
         task_id, dataset, log_file = d['task_id'], d['dataset'], d['log_file']
         results_json_file = log_file.parent.parent / 'results.json'
-        print(f'Task error: {raised_exception} ({raised_exception.ak_data})')
-        add_string_to_log(f"# Termination information\n## Reason\nerror\n## Error data\n```\n{raised_exception}\n```\n## Error ak_data\n```\n{raised_exception.ak_data}\n```\n", log_file)
+        print(f'Task error: {e} ({e.ak_data})')
+        add_string_to_log(f"# Termination information\n## Reason\nerror\n## Error data\n```\n{e}\n```\n## Error ak_data\n```\n{e.ak_data}\n```\n", log_file)
         add_string_to_log(f"##Score\nscore is 0.0\n", log_file)
-        add_item_to_experiment_log(task_id, dataset, 'error', 0.0, results_json_file, raised_exception, raised_exception.ak_data)
-    except:
-        pass
+        add_item_to_experiment_log(task_id, dataset, 'error', 0.0, results_json_file, e, e.ak_data)
+    except Exception as e:
+        print(f'Exception: {e}')
+        print(traceback.format_exception(e))
 
 
 def create_and_save_submission_file(dataset_: Dataset, list_of_results):
@@ -68,9 +92,9 @@ def create_and_save_submission_file(dataset_: Dataset, list_of_results):
             })
 
     for result in list_of_results:
-        task_id, dataset, log_file, solutions, termination_reason, score = result
-        if solutions:
-            for i, sol in enumerate(solutions):
+        task_id, dataset, log_file, solution, termination_reason, score = result
+        if solution:
+            for i, sol in enumerate(solution):
                 submission_obj[task_id][i]['attempt_1'] = sol
 
     Path('submission.json').write_text(json.dumps(submission_obj))
@@ -99,7 +123,6 @@ def experiment(solver, task_ids, dataset, log_dir: Path, pool_size=5, timeout_se
     log_dir.mkdir(parents=True, exist_ok=True)
     (log_dir / 'results.json').touch()
 
-
     all_job_args = [(solver, task_id, dataset, log_dir) for task_id in task_ids]
     
     try:
@@ -111,7 +134,8 @@ def experiment(solver, task_ids, dataset, log_dir: Path, pool_size=5, timeout_se
                 except Exception as e:
                     _task_error(e)
         else:
-            with Pool(pool_size) as p:
+            # with mp.Pool(pool_size) as p:
+            with NonDaemonPool(pool_size) as p:
                 for job_args in all_job_args:
                     p.apply_async(
                         solver_wrapper,
@@ -122,9 +146,10 @@ def experiment(solver, task_ids, dataset, log_dir: Path, pool_size=5, timeout_se
 
                 p.close()
                 p.join()
-    except:
-        pass
-    
+    except Exception as e:
+        print(f'Exception: {e}')
+        print(traceback.format_exception(e))
+        
     sum_scores = sum(int(e[-1] or 0) for e in list_of_results)
     print(f'\n\nExperiment finished. {len(list_of_results)=}, {sum_scores=}')
     create_and_save_submission_file(dataset, list_of_results)

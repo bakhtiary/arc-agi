@@ -3,6 +3,7 @@ from pathlib import Path
 import warnings
 
 from llm_utils import LLMInterface
+from simple_state_machine_with_tools_and_fixed_hypo import SimpleStateMachineWithToolsAndFixedHypo
 from simple_state_machine_with_tools_and_larc import SimpleStateMachineWithToolsAndLarc
 from simple_state_machine_with_tools_and_lens_2 import SimpleStateMachineWithToolsAndLens2
 from simple_state_machine_with_tools_and_lens_3 import SimpleStateMachineWithToolsAndLens3
@@ -20,7 +21,7 @@ from litellm_interface import LiteLLMInterface
 from dataset import LocalDataset, KaggleDataset
 from experimenter import experiment
 
-from state_machine_solver import StateMachineSolver
+from state_machine_solver import StateMachineSolver, StateMachineSolverNestedMultiprocessing
 from state_machine_multi_solver import StateMachineMultiSolver, StateMachineSolverWithRestart
 
 from simple_state_machine_distinct_pairs import SimpleStateMachineDistinctPairs
@@ -103,7 +104,7 @@ def local_main():
     # llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='deepseek/deepseek-reasoner')
     # llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='fireworks/accounts/fireworks/models/deepseek-r1')
     # llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='o1-mini')
-    llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='gpt-4o')
+    llm_interface = LiteLLMInterface(vision_model='gpt-4o', text_model='o1-mini')
     
     dataset = LocalDataset('training')
     #dataset = LocalDataset('evaluation')
@@ -123,12 +124,16 @@ def local_main():
     
     # task_ids = ['c8f0f002']
     task_ids = pre_dealine_mix
-    #task_ids = t1_easy # smoke test
+    # task_ids = t1_easy # smoke test
     
-    state_machine_solver = StateMachineSolverWithRestart(
-        SimpleStateMachineWithToolsAndLarc, llm_interface, num_restarts=1)
+    # state_machine_solver = StateMachineSolverWithRestart(
+    #     SimpleStateMachineWithToolsAndLarc, llm_interface, num_restarts=1)
+    state_machine_solver = StateMachineSolver(SimpleStateMachineWithToolsAndLarc, llm_interface)
+    # state_machine_solver = StateMachineSolverNestedMultiprocessing(
+    #     SimpleStateMachineWithToolsAndFixedHypo, llm_interface, pool_size=5, num_hypos=5)
+
     
-    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=6)
+    experiment(state_machine_solver, task_ids, dataset, LOG_DIR, pool_size=5)
 
 
 if __name__ == '__main__':
